@@ -72,7 +72,7 @@ Type : BOOL																														{output::printProductionRule(42);};
 EnumType : ENUM ID																										{output::printProductionRule(43);};
 Exp : LPAREN Exp RPAREN																								{output::printProductionRule(44);};
 Exp : Exp BINOPH Exp 																									{output::printProductionRule(45);};
-Exp : Exp BINOPL Exp																									{output::printProductionRule(45);};
+Exp : Exp BINOPL Exp																									{$$ = $1 + $3; output::printProductionRule($$);};
 Exp : ID																															{output::printProductionRule(46);};
 Exp : Call																														{output::printProductionRule(47);};
 Exp : NUM																															{output::printProductionRule(48);};

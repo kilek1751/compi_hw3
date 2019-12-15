@@ -1,10 +1,15 @@
 %{
 	#include <iostream>
 	#include <stdlib.h>
-	#include "output.hpp"
-	extern int yylex();
+	#include "source.hpp"
+	#include "hw3_output.hpp"
+	#include "scope.h"
+
+	int yylex();
 	extern int yylineno;
+	extern void discoveringYYSTYPE(int yy);
 	int yyerror(const char * message);
+	
 %}
 
 %token LEXERROR BOOL
@@ -27,65 +32,65 @@
 
 %%
 
-Program	: Enums Funcs 																								{output::printProductionRule(1);};
-Funcs : /*epsilon*/ 																									{output::printProductionRule(2);};
-Funcs : FuncDecl Funcs 																								{output::printProductionRule(3);};
-FuncDecl : RetType ID LPAREN Formals RPAREN LBRACE Statements RBRACE 	{output::printProductionRule(4);};
-Enums : /*epsilon*/																										{output::printProductionRule(5);};
-Enums : EnumDecl Enums 																								{output::printProductionRule(6);};
-EnumDecl : ENUM ID LBRACE EnumeratorList RBRACE SC 										{output::printProductionRule(7);};
-RetType : Type																												{output::printProductionRule(8);};
-RetType : VOID 																												{output::printProductionRule(9);};
-Formals : /*epsilon*/ 																								{output::printProductionRule(10);};
-Formals : FormalsList 																								{output::printProductionRule(11);};
-FormalsList : FormalDecl 																							{output::printProductionRule(12);};
-FormalsList : FormalDecl COMMA FormalsList 														{output::printProductionRule(13);};
-FormalDecl : Type ID 																									{output::printProductionRule(14);};
-FormalDecl : EnumType ID 																							{output::printProductionRule(15);};
-EnumeratorList : Enumerator 																					{output::printProductionRule(16);};
-EnumeratorList : EnumeratorList COMMA Enumerator 											{output::printProductionRule(17);};
-Enumerator : ID 																											{output::printProductionRule(18);};
-Statements : Statement 																								{output::printProductionRule(19);};
-Statements : Statements Statement 																		{output::printProductionRule(20);};
-Statement : LBRACE Statements RBRACE 																	{output::printProductionRule(21);};
-Statement : Type ID SC 																								{output::printProductionRule(22);};
-Statement : EnumType ID SC 																						{output::printProductionRule(23);};
-Statement : EnumDecl 																									{output::printProductionRule(24);};
-Statement : Type ID ASSIGN Exp SC																			{output::printProductionRule(25);};
-Statement : EnumType ID ASSIGN Exp SC																	{output::printProductionRule(26);};
-Statement : ID ASSIGN Exp SC 																					{output::printProductionRule(27);};
-Statement : Call SC 																									{output::printProductionRule(28);};
-Statement : RETURN SC																									{output::printProductionRule(29);};
-Statement : RETURN Exp SC																							{output::printProductionRule(30);};
-Statement : IF LPAREN Exp RPAREN Statement %prec THEN									{output::printProductionRule(31);};
-Statement : IF LPAREN Exp RPAREN Statement ELSE Statement							{output::printProductionRule(32);};
-Statement : WHILE LPAREN Exp RPAREN Statement 												{output::printProductionRule(33);};
-Statement : BREAK SC 																									{output::printProductionRule(34);};
-Statement : CONTINUE SC 																							{output::printProductionRule(35);};
-Call : ID LPAREN ExpList RPAREN																				{output::printProductionRule(36);};
-Call : ID LPAREN RPAREN																								{output::printProductionRule(37);};
-ExpList : Exp																													{output::printProductionRule(38);};
-ExpList : Exp COMMA ExpList																						{output::printProductionRule(39);};
-Type : INT																														{output::printProductionRule(40);};
-Type : BYTE																														{output::printProductionRule(41);};
-Type : BOOL																														{output::printProductionRule(42);};
-EnumType : ENUM ID																										{output::printProductionRule(43);};
-Exp : LPAREN Exp RPAREN																								{output::printProductionRule(44);};
-Exp : Exp BINOPH Exp 																									{output::printProductionRule(45);};
-Exp : Exp BINOPL Exp																									{$$ = $1 + $3; output::printProductionRule($$);};
-Exp : ID																															{output::printProductionRule(46);};
-Exp : Call																														{output::printProductionRule(47);};
-Exp : NUM																															{output::printProductionRule(48);};
-Exp : NUM B																														{output::printProductionRule(49);};
-Exp : STRING																													{output::printProductionRule(50);};
-Exp : TRUE																														{output::printProductionRule(51);};
-Exp : FALSE																														{output::printProductionRule(52);};
-Exp : NOT Exp																													{output::printProductionRule(53);};
-Exp : Exp AND Exp																											{output::printProductionRule(54);};
-Exp : Exp OR Exp 																											{output::printProductionRule(55);};
-Exp : Exp RELOP Exp																										{output::printProductionRule(56);};
-Exp : Exp RELEQ Exp																										{output::printProductionRule(56);};
-Exp : LPAREN Type RPAREN Exp %prec CAST																{output::printProductionRule(57);};
+Program	: Enums Funcs 																								{};
+Funcs : /*epsilon*/ 																									{};
+Funcs : FuncDecl Funcs 																								{};
+FuncDecl : RetType ID LPAREN Formals RPAREN LBRACE Statements RBRACE 	{};
+Enums : /*epsilon*/																										{};
+Enums : EnumDecl Enums 																								{};
+EnumDecl : ENUM ID LBRACE EnumeratorList RBRACE SC 										{};
+RetType : Type																												{};
+RetType : VOID 																												{};
+Formals : /*epsilon*/ 																								{};
+Formals : FormalsList 																								{};
+FormalsList : FormalDecl 																							{};
+FormalsList : FormalDecl COMMA FormalsList 														{};
+FormalDecl : Type ID 																									{};
+FormalDecl : EnumType ID 																							{};
+EnumeratorList : Enumerator 																					{};
+EnumeratorList : EnumeratorList COMMA Enumerator 											{};
+Enumerator : ID 																											{};
+Statements : Statement 																								{};
+Statements : Statements Statement 																		{};
+Statement : LBRACE Statements RBRACE 																	{};
+Statement : Type ID SC 																								{};
+Statement : EnumType ID SC 																						{};
+Statement : EnumDecl 																									{};
+Statement : Type ID ASSIGN Exp SC	 																{$1->printData();};
+Statement : EnumType ID ASSIGN Exp SC																	{};
+Statement : ID ASSIGN Exp SC 																					{};
+Statement : Call SC 																									{};
+Statement : RETURN SC																									{};
+Statement : RETURN Exp SC																							{};
+Statement : IF LPAREN Exp RPAREN Statement %prec THEN									{};
+Statement : IF LPAREN Exp RPAREN Statement ELSE Statement							{};
+Statement : WHILE LPAREN Exp RPAREN Statement 												{};
+Statement : BREAK SC 																									{};
+Statement : CONTINUE SC 																							{};
+Call : ID LPAREN ExpList RPAREN																				{};
+Call : ID LPAREN RPAREN																								{};
+ExpList : Exp																													{};
+ExpList : Exp COMMA ExpList																						{};
+Type : INT																														{$$=new TypeContainer(*$1);};
+Type : BYTE																														{$$=new TypeContainer(*$1);};
+Type : BOOL																												{$$=new TypeContainer(*$1);};
+EnumType : ENUM ID																										{};
+Exp : LPAREN Exp RPAREN																								{};
+Exp : Exp BINOPH Exp 																									{};
+Exp : Exp BINOPL Exp																									{};
+Exp : ID																															{};
+Exp : Call																														{};
+Exp : NUM																															{$$=new TypeContainer(INT);};
+Exp : NUM B																														{$$=new TypeContainer(B);};
+Exp : STRING																													{};
+Exp : TRUE																														{$$=new TypeContainer(*$1);};
+Exp : FALSE																														{$$=new TypeContainer(*$1);};
+Exp : NOT Exp																													{$$=new TypeContainer(BOOL);};
+Exp : Exp AND Exp																											{$$=new TypeContainer(BOOL);};
+Exp : Exp OR Exp 																											{$$=new TypeContainer(BOOL);};
+Exp : Exp RELOP Exp																										{$$=new TypeContainer(BOOL);};
+Exp : Exp RELEQ Exp																										{$$=new TypeContainer(BOOL);};
+Exp : LPAREN Type RPAREN Exp %prec CAST																{};
 
 %%
 

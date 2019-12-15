@@ -1,8 +1,15 @@
 %{
 
 /* Declarations section */
+#include <stdlib.h>
+#include "source.hpp"
 #include "parser.tab.hpp"
-#include "output.hpp"
+#include "hw3_output.hpp"
+
+
+
+
+
 
 %}
 
@@ -14,16 +21,16 @@
 
 
 void                            return VOID;
-int                             return INT;
+int                             {yylval=new TypeContainer(INT);return INT;};
 byte                            return BYTE;
-b                               return B;
-bool                            return BOOL;
-enum                            return ENUM;
+b                               {yylval=new TypeContainer(B);return B;};
+bool                            {yylval=new Bool(yytext,BOOL);return BOOL;};
+enum                            {yylval=new Enum(yytext,ENUM);return ENUM;};
 and                             return AND;
 or                              return OR;
 not                             return NOT;
-true                            return TRUE;
-false                           return FALSE;
+true                            {yylval=new Bool(yytext,TRUE);return TRUE;};
+false                           {yylval=new Bool(yytext,FALSE);return FALSE;};
 return                          return RETURN;
 else                            return ELSE;
 if                              return IF;
@@ -41,12 +48,13 @@ continue                        return CONTINUE;
 ==|!=                           return RELEQ;
 [\*\/]                          return BINOPH;
 [\+\-]                          return BINOPL;
-[a-zA-z][a-zA-z0-9]*            return ID;
-0|[1-9][0-9]*                   return NUM;
-\"([^\n\r\"\\]|\\[rnt"\\])+\"	  return STRING;
+[a-zA-z][a-zA-z0-9]*            {yylval=new Id(yytext,ID);return ID;};
+0|[1-9][0-9]*                   {yylval=new Int(yytext,INT);return NUM;};
+\"([^\n\r\"\\]|\\[rnt"\\])+\"	{yylval=new String(yytext,STRING);return STRING;};
 <<EOF>>                         return 0;
 [\r\n\t ]|\/\/[^\r\n]*[\r|\n|\r\n]?	    ;
-.                               output::errorLex(yylineno); exit(0);
+.                               {output::errorLex(yylineno);exit(0);};
 
 
 %%
+

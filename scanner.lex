@@ -21,9 +21,9 @@
 
 
 void                            return VOID;
-int                             {yylval=new TypeContainer(INT);return INT;};
+int                             {yylval=new Int(yytext,INT);return INT;};
 byte                            return BYTE;
-b                               {yylval=new TypeContainer(B);return B;};
+b                               {yylval=new Byte(yytext,B);return B;};
 bool                            {yylval=new Bool(yytext,BOOL);return BOOL;};
 enum                            {yylval=new Enum(yytext,ENUM);return ENUM;};
 and                             return AND;

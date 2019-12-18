@@ -13,24 +13,25 @@ using std::vector;
 
 class TypeContainer {
  public:
-  int type;
-  TypeContainer(int some_type) : type(some_type){};
+  string type;
+  TypeContainer(string some_type) : type(some_type){};
+  TypeContainer() : type("NO_TYPE"){};
   void printData() { std::cout << type << endl; }
-  int getType() { return type; };
-  vector<int> virtual getTypes(){};
+  string getType() { return type; };
+  vector<string> virtual getTypes(){};
   void virtual printContent(){};
   int virtual getVal(){};
   string virtual getName(){};
-  void virtual addType(int some_type){};
-  void virtual addTypes(vector<int> to_add_types){};
+  void virtual addType(string some_type){};
+  void virtual addTypes(vector<string> to_add_types){};
 };
 
 class Int : public TypeContainer {
   int val;
 
  public:
-  Int(char* yytext, int id_type) : val(atoi(yytext)), TypeContainer(id_type){};
-  Int(int in_val, int id_type) : val(in_val), TypeContainer(id_type){};
+  Int(char* yytext, string type) : val(atoi(yytext)), TypeContainer(type){};
+  Int(int in_val, string type) : val(in_val), TypeContainer(type){};
   int getVal() { return val; };
 };
 
@@ -38,16 +39,16 @@ class Byte : public TypeContainer {
   int byt;
 
  public:
-  Byte(char* yytext, int id_type) : byt(atoi(yytext)), TypeContainer(id_type){};
-  Byte(int val, int id_type) : byt(val), TypeContainer(id_type){};
+  Byte(char* yytext, string type) : byt(atoi(yytext)), TypeContainer(type){};
+  Byte(int val, string type) : byt(val), TypeContainer(type){};
 };
 
 class Id : public TypeContainer {
   string name;
 
  public:
-  Id(char* yytext, int id_type) : name(yytext), TypeContainer(id_type){};
-  Id(string yytext, int id_type) : name(yytext), TypeContainer(id_type){};
+  Id(char* yytext, string type) : name(yytext), TypeContainer(type){};
+  Id(string yytext, string type) : name(yytext), TypeContainer(type){};
   string getName() { return name; };
 };
 
@@ -55,7 +56,7 @@ class Bool : public TypeContainer {
   bool val;
 
  public:
-  Bool(char* yytext, int id_type) : TypeContainer(id_type) {
+  Bool(char* yytext, string type) : TypeContainer(type) {
     string current_str(yytext);
     if (current_str == "true") {
       val = true;
@@ -64,14 +65,19 @@ class Bool : public TypeContainer {
     }
     val = false;
   }
-  Bool(bool in_val, int id_type) : val(in_val), TypeContainer(id_type){};
+  Bool(bool in_val, string type) : val(in_val), TypeContainer(type){};
+};
+
+class Void : public TypeContainer {
+ public:
+  Void(string type) : TypeContainer(type){};
 };
 
 class String : public TypeContainer {
   string my_str;
 
  public:
-  String(char* yytext, int id_type) : my_str(yytext), TypeContainer(id_type) {}
+  String(char* yytext, string type) : my_str(yytext), TypeContainer(type) {}
   void printContent() { cout << my_str << endl; }
 };
 
@@ -80,27 +86,51 @@ class Enum : public TypeContainer {
 
  public:
   vector<string> enum_types;
-  Enum(char* yytext, int id_type) : id(yytext), TypeContainer(id_type){};
-  Enum(string given_id, int id_type) : id(given_id), TypeContainer(id_type){};
+  Enum(char* yytext, string type) : id(yytext), TypeContainer(type){};
+  Enum(string given_id, string type) : id(given_id), TypeContainer(type){};
   void addTypes(vector<string> to_add) { enum_types = to_add; }
 };
 
 class ExpList : public TypeContainer {
-  vector<int> types;
+  vector<string> types;
 
  public:
-  ExpList(int type) : TypeContainer(type) { types.push_back(type); }
-  void addType(int type) { types.push_back(type); }
-  vector<int> getTypes() { return types; }
-  void addTypes(vector<int> to_add_types) {
-    for (int type : to_add_types) {
+  ExpList(string type) : TypeContainer(type) { types.push_back(type); }
+  void addType(string type) { types.push_back(type); }
+  vector<string> getTypes() { return types; }
+  void addTypes(vector<string> to_add_types) {
+    for (string type : to_add_types) {
       types.push_back(type);
     }
   }
   void printContent() {
-    for (int i : types) {
+    for (string i : types) {
       cout << "Exp type is : " << i << " ";
     }
+  }
+};
+
+class FormalListClass : public TypeContainer {
+  vector<Id> formals;
+
+ public:
+  FormalListClass() : TypeContainer(){};
+  FormalListClass(Id id) : TypeContainer(id.getType()) {
+    formals.emplace_back(id);
+  }
+  void addId(Id id) { formals.emplace_back(id); }
+  vector<Id> getIds() { return formals; }
+  void addIds(vector<Id> id_list) {
+    for (Id id : id_list) {
+      formals.emplace_back(id);
+    }
+  }
+  vector<string> getTypes() {
+    vector<string> output_vec;
+    for (Id id : formals) {
+      output_vec.push_back(id.getType());
+    }
+    return output_vec;
   }
 };
 

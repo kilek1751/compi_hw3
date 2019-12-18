@@ -1,0 +1,7 @@
+*.exe
+lex.yy.c
+parser.tab.cpp
+parser.tab.hpp
+Makefile
+t1.*
+*.out

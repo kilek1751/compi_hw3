@@ -42,8 +42,8 @@ Program	: {
 	table.insertScope();
 	vector<string> print_func_args;
 	vector<string> printi_func_args;
-	print_func_args.push_back("string");
-	printi_func_args.push_back("int");
+	print_func_args.push_back("STRING");
+	printi_func_args.push_back("INT");
 	string print_func_type = makeFunctionType("void",print_func_args);
 	string printi_func_type = makeFunctionType("void",printi_func_args);
 	table.addScopeData(ScopeData("print",0,print_func_type));
@@ -82,7 +82,7 @@ Statement : Type ID {wasDefined($2);} SC {
 
 };
 Statement : EnumType ID SC														{};
-Statement : EnumDecl																	{};
+Statement : EnumDecl		bl															{};
 Statement : Type ID {wasDefined($2);} ASSIGN Exp SC	{
 	typeCheck($1,$5);
 	};
@@ -212,3 +212,20 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 		 errorUndefFunc(yylineno, con->getName());
 	 }
  }
+
+
+
+enum week {sund ,mon ,tuse ...}
+enum week day = sunday;
+(enum id)-enumtype id
+
+// class "enum" - 
+
+// name week
+// type enum
+
+// class "enumtype"
+
+// name - day
+// type - enum week
+// ....

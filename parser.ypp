@@ -15,7 +15,7 @@
 	void typeCheck(TypeContainer* lhs,TypeContainer* rhs);
 	int yyerror(const char * message);
 	Scope table;
-	
+
 %}
 
 %token LEXERROR BOOL
@@ -51,75 +51,92 @@ Program	: {
 	endScope();
 	table.printLastScopeData();
 }
-	Enums Funcs 																								{};
-Funcs : /*epsilon*/ 																									{};
-Funcs : FuncDecl Funcs 																								{};
-FuncDecl : RetType ID LPAREN Formals RPAREN LBRACE Statements RBRACE { 
- 	vector<string> formals_types = $4->getTypes();	
+	Enums Funcs																					{};
+Funcs : /*epsilon*/																		{};
+Funcs : FuncDecl Funcs																{};
+FuncDecl : RetType ID LPAREN Formals RPAREN LBRACE Statements RBRACE {
+ 	vector<string> formals_types = $4->getTypes();
 	string func_type = makeFunctionType($1->getType(),formals_types);
 	table.addScopeData(ScopeData($2->getName(),0,func_type));
 	endScope();
 	table.printLastScopeData();
 };
-Enums : /*epsilon*/																										{};
-Enums : EnumDecl Enums 																								{};
-EnumDecl : ENUM ID LBRACE EnumeratorList RBRACE SC 										{};
-RetType : Type								{$$=$1;};
-RetType : VOID 								{$$=$1;};
-Formals : /*epsilon*/ 						{$$ = new FormalListClass();};
-Formals : FormalsList 						{$$=$1;};
-FormalsList : FormalDecl 					{$$=$1;};
-FormalsList : FormalDecl COMMA FormalsList 	{((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
-FormalDecl : Type ID 						{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
-FormalDecl : EnumType ID 					{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
-EnumeratorList : Enumerator 																					{};
-EnumeratorList : EnumeratorList COMMA Enumerator 											{};
-Enumerator : ID 																											{};
-Statements : Statement 																								{};
-Statements : Statements Statement 																		{};
-Statement : LBRACE Statements RBRACE 																	{};
-Statement : Type ID SC 																								{};
-Statement : EnumType ID SC 																						{};
-Statement : EnumDecl 																									{};
+Enums : /*epsilon*/																		{};
+Enums : EnumDecl Enums																{};
+EnumDecl : ENUM ID LBRACE EnumeratorList RBRACE SC		{};
+RetType : Type																				{$$=$1;};
+RetType : VOID																				{$$=$1;};
+Formals : /*epsilon*/																	{$$ = new FormalListClass();};
+Formals : FormalsList																	{$$=$1;};
+FormalsList : FormalDecl															{$$=$1;};
+FormalsList : FormalDecl COMMA FormalsList						{((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
+FormalDecl : Type ID																	{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
+FormalDecl : EnumType ID															{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
+EnumeratorList : Enumerator														{};
+EnumeratorList : EnumeratorList COMMA Enumerator			{};
+Enumerator : ID																				{};
+Statements : Statement																{};
+Statements : Statements Statement											{};
+Statement : LBRACE Statements RBRACE									{};
+Statement : Type ID SC																{};
+Statement : EnumType ID SC														{};
+Statement : EnumDecl																	{};
 Statement : Type ID {} ASSIGN Exp SC	{
 	typeCheck($1,$5);
 	};
-Statement : EnumType ID ASSIGN Exp SC																	{};
+Statement : EnumType ID ASSIGN Exp SC									{};
 Statement : ID {} ASSIGN Exp SC 	{
-	typeCheck($1->getType(),$4->getType());
+	typeCheck($1,$4);
 	};
-Statement : Call SC 																									{};
-Statement : RETURN SC																									{};
-Statement : RETURN Exp SC																							{};
-Statement : IF LPAREN Exp RPAREN Statement %prec THEN									{};
-Statement : IF LPAREN Exp RPAREN Statement ELSE Statement							{};
-Statement : WHILE LPAREN Exp RPAREN Statement 												{};
-Statement : BREAK SC 																									{};
-Statement : CONTINUE SC 																							{};
-Call : ID LPAREN ExpList RPAREN																		{};
-Call : ID LPAREN RPAREN																								{};
+Statement : Call SC																		{};
+Statement : RETURN SC																	{};
+Statement : RETURN Exp SC															{};
+Statement : IF LPAREN Exp RPAREN Statement %prec THEN	{};
+Statement : IF LPAREN Exp RPAREN Statement ELSE Statement	{};
+Statement : WHILE LPAREN Exp RPAREN Statement					{};
+Statement : BREAK SC																	{};
+Statement : CONTINUE SC																{};
+Call : ID LPAREN ExpList RPAREN												{};
+Call : ID LPAREN RPAREN																{};
 ExpList : Exp																					{$$=new ExpList($1->getType());};
-ExpList : Exp COMMA ExpList	{$$=new ExpList($1->getType());$$->addTypes($3->getTypes());};
-Type : INT																														{$$=$1;};
-Type : BYTE																														{$$=$1;};
-Type : BOOL																												{$$=$1;};
-EnumType : ENUM ID																										{$$=new Enum($2->getName(),"ENUM");};
-Exp : LPAREN Exp RPAREN																							{$$=$2;};
-Exp : Exp BINOPH Exp 											{ $$ = binOpType($1,$3); };
-Exp : Exp BINOPL Exp 											{ $$ = binOpType($1,$3); };
-Exp : ID																															{$$=new Id(yytext,"ID");};
-Exp : Call																														{$$=$1;};
-Exp : NUM																															{$$=new Int(yytext,"INT");};
-Exp : NUM B																														{$$=new Byte($1->getVal(),"BYTE");};
-Exp : STRING																													{$$=new String(yytext,"STRING");};
-Exp : TRUE																														{$$=new Bool(true,"TRUE");};
-Exp : FALSE																														{$$=new Bool(false,"FALSE");};
-Exp : NOT Exp																													{$$=new Bool(yytext,"BOOL");};
-Exp : Exp AND Exp																											{$$=new Bool(yytext,"BOOL");};
-Exp : Exp OR Exp 																											{$$=new Bool(yytext,"BOOL");};
-Exp : Exp RELOP Exp																									{$$=new Bool(yytext,"BOOL");};
-Exp : Exp RELEQ Exp																										{$$=new Bool(yytext,"BOOL");};
-Exp : LPAREN Type RPAREN Exp %prec CAST																{$$=$2;};
+ExpList : Exp COMMA ExpList														{$$=new ExpList($1->getType());$$->addTypes($3->getTypes());};
+Type : INT																						{$$=$1;};
+Type : BYTE																						{$$=$1;};
+Type : BOOL																						{$$=$1;};
+EnumType : ENUM ID																		{$$=new Enum($2->getName(),"ENUM");};
+Exp : LPAREN Exp RPAREN																{$$=$2;};
+Exp : Exp BINOPH Exp {
+	typeCheck($1,$3);
+	$$ = binOpType($1,$3);
+};
+Exp : Exp BINOPL Exp {
+	typeCheck($1,$3);
+	$$ = binOpType($1,$3);
+};
+Exp : ID																							{$$=new Id(yytext,"ID");};
+Exp : Call																						{$$=$1;};
+Exp : NUM																							{$$=new Int(yytext,"INT");};
+Exp : NUM B																						{$$=new Byte($1->getVal(),"BYTE");};
+Exp : STRING																					{$$=new String(yytext,"STRING");};
+Exp : TRUE																						{$$=new Bool(true,"TRUE");};
+Exp : FALSE																						{$$=new Bool(false,"FALSE");};
+Exp : NOT Exp																					{$$=new Bool(yytext,"BOOL");};
+Exp : Exp AND Exp {
+	typeCheck($1,$3);
+	$$=new Bool(yytext,"BOOL");};
+Exp : Exp OR Exp {
+	typeCheck($1,$3);
+	$$=new Bool(yytext,"BOOL");
+};
+Exp : Exp RELOP Exp {
+	typeCheck($1,$3);
+	$$=new Bool(yytext,"BOOL");
+};
+Exp : Exp RELEQ Exp {
+	typeCheck($1,$3);
+	$$=new Bool(yytext,"BOOL");
+};
+Exp : LPAREN Type RPAREN Exp %prec CAST								{$$=$2;};
 
 %%
 
@@ -141,10 +158,7 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
   if (type_one == "INT" || type_two == "INT"){
 	  return new Int(lhs->getVal()+rhs->getVal(),"INT");
   }
-  if (type_one == "BYTE" || type_two == "BYTE"){
-	  return new Int(lhs->getVal()+rhs->getVal(),"BYTE");
-  }
-  return new Int(lhs->getVal() + rhs->getVal(), "B");
+  return new Int(lhs->getVal() + rhs->getVal(), "BYTE");
 }
 
  void typeCheck(TypeContainer* lhs,TypeContainer* rhs){

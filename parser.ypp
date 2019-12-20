@@ -78,26 +78,38 @@ Enumerator : ID																				{};
 Statements : Statement																{};
 Statements : Statements Statement											{};
 Statement : LBRACE Statements RBRACE									{};
-Statement : Type ID SC																{};
+Statement : Type ID SC {
+	wasDefined($2);
+};
 Statement : EnumType ID SC														{};
 Statement : EnumDecl																	{};
-Statement : Type ID {} ASSIGN Exp SC	{
+Statement : Type ID {WasDefined($2);} ASSIGN Exp SC	{
 	typeCheck($1,$5);
 	};
-Statement : EnumType ID ASSIGN Exp SC									{};
-Statement : ID {} ASSIGN Exp SC 	{
+Statement : EnumType ID ASSIGN Exp SC {
+	wasDefined($2);
+};
+Statement : ID {WasDefined($2);} ASSIGN Exp SC 	{
 	typeCheck($1,$4);
 	};
 Statement : Call SC																		{};
 Statement : RETURN SC																	{};
 Statement : RETURN Exp SC															{};
-Statement : IF LPAREN Exp RPAREN Statement %prec THEN	{};
-Statement : IF LPAREN Exp RPAREN Statement ELSE Statement	{};
-Statement : WHILE LPAREN Exp RPAREN Statement					{};
+Statement : IF LPAREN Exp {isBool($3);} RPAREN Statement %prec THEN	{};
+Statement : IF LPAREN Exp {isBool($3);} RPAREN Statement ELSE Statement {};
+Statement : WHILE LPAREN Exp {isBool($3);} RPAREN Statement {};
 Statement : BREAK SC																	{};
 Statement : CONTINUE SC																{};
-Call : ID LPAREN ExpList RPAREN												{};
-Call : ID LPAREN RPAREN																{};
+Call : ID {CheckDefinedFunc($1)} LPAREN ExpList RPAREN {
+	if($1->getTypes() != $3->getTypes){																						#TODO overload != of vector types or function it.
+		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes())							#TODO getTypes returns a vector, should it ?
+	}
+};
+Call : ID {CheckDefinedFunc($1)} LPAREN RPAREN {
+	if($1->getTypes().size() != 0){
+		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes())							#TODO getTypes returns a vector, should it ?
+	}
+};
 ExpList : Exp																					{$$=new ExpList($1->getType());};
 ExpList : Exp COMMA ExpList														{$$=new ExpList($1->getType());$$->addTypes($3->getTypes());};
 Type : INT																						{$$=$1;};
@@ -118,14 +130,16 @@ Exp : Call																						{$$=$1;};
 Exp : NUM																							{$$=new Int(yytext,"INT");};
 Exp : NUM B																						{$$=new Byte($1->getVal(),"BYTE");};
 Exp : STRING																					{$$=new String(yytext,"STRING");};
-Exp : TRUE																						{$$=new Bool(true,"TRUE");};
-Exp : FALSE																						{$$=new Bool(false,"FALSE");};
-Exp : NOT Exp																					{$$=new Bool(yytext,"BOOL");};
+Exp : TRUE																						{$$=new Bool(true,"BOOL");};
+Exp : FALSE																						{$$=new Bool(false,"BOOL");};
+Exp : NOT Exp																					{$$=new Bool(yytext,"BOOL");}; # should be yytext -> $2->type
 Exp : Exp AND Exp {
-	typeCheck($1,$3);
+	isBool($1);
+	isBool($2);
 	$$=new Bool(yytext,"BOOL");};
 Exp : Exp OR Exp {
-	typeCheck($1,$3);
+	isBool($1);
+	isBool($2);
 	$$=new Bool(yytext,"BOOL");
 };
 Exp : Exp RELOP Exp {
@@ -162,7 +176,31 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 }
 
  void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
-	 if(lhs->getType()!=rhs->getType()){
+	 if(lhs->getType() != rhs->getType()){
 		 errorMismatch(yylineno);
 	 }
+ }
+
+ bool isBool(TypeContainer* con){
+		if (con->getType() == "BOOL"){
+			errorMismatch(yylineno);
+		}
+ }
+
+ void wasDefined(TypeContainer* con){
+	 if(#notInTable){
+		 errorDef(yylineno, con->getName());
+	 }
+ }
+
+ void notDefined(TypeContainer* con){
+	 if(#notInTable){
+		 errorUndef(yylineno, con->getName());
+	 }
+ }
+
+ void CheckDefinedFunc(TypeContainer* con){
+	if(con->getName != "FUNC" || #notInTable){
+		errorUndefFunc(yylineno, $1->getName());
+	}
  }

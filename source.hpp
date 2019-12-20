@@ -45,11 +45,13 @@ class Byte : public TypeContainer {
 
 class Id : public TypeContainer {
   string name;
+  vector<string> types;
 
  public:
   Id(char* yytext, string type) : name(yytext), TypeContainer(type){};
   Id(string yytext, string type) : name(yytext), TypeContainer(type){};
   string getName() { return name; };
+  vector<string> getTypes() { return types; }
 };
 
 class Bool : public TypeContainer {

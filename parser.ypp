@@ -54,8 +54,8 @@ Program	: {
 	Enums Funcs 																								{};
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
-FuncDecl : RetType ID LPAREN Formals RPAREN LBRACE Statements RBRACE { 
- 	vector<string> formals_types = $4->getTypes();	
+FuncDecl : RetType ID {/*idcheck*/} LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} { 
+ 	vector<string> formals_types = $5->getTypes();	
 	string func_type = makeFunctionType($1->getType(),formals_types);
 	table.addScopeData(ScopeData($2->getName(),0,func_type));
 	endScope();
@@ -63,23 +63,23 @@ FuncDecl : RetType ID LPAREN Formals RPAREN LBRACE Statements RBRACE {
 };
 Enums : /*epsilon*/																										{};
 Enums : EnumDecl Enums 																								{};
-EnumDecl : ENUM ID LBRACE EnumeratorList RBRACE SC 										{};
+EnumDecl : ENUM ID {/*idcheck*/} LBRACE {/*startenumscope*/} EnumeratorList RBRACE {/*endenumscope*/} SC 										{};
 RetType : Type								{$$=$1;};
 RetType : VOID 								{$$=$1;};
 Formals : /*epsilon*/ 						{$$ = new FormalListClass();};
 Formals : FormalsList 						{$$=$1;};
 FormalsList : FormalDecl 					{$$=$1;};
 FormalsList : FormalDecl COMMA FormalsList 	{((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
-FormalDecl : Type ID 						{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
-FormalDecl : EnumType ID 					{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
+FormalDecl : Type ID 						{$$=new FormalListClass(Id($2->getName(),$1->getType()));/*idcheck*/};
+FormalDecl : EnumType ID 					{$$=new FormalListClass(Id($2->getName(),$1->getType()));/*idcheck*/};
 EnumeratorList : Enumerator 																					{};
 EnumeratorList : EnumeratorList COMMA Enumerator 											{};
-Enumerator : ID 																											{};
+Enumerator : ID 																						{/*enumidcheck*/};
 Statements : Statement 																								{};
 Statements : Statements Statement 																		{};
-Statement : LBRACE Statements RBRACE 																	{};
-Statement : Type ID SC 																								{};
-Statement : EnumType ID SC 																						{};
+Statement : LBRACE {/*startscoe*/} Statements RBRACE {/*endscope*/} 																	{};
+Statement : Type ID {/*idcheck*/} SC 																								{};
+Statement : EnumType ID {/*idcheck*/} SC 																						{};
 Statement : EnumDecl 																									{};
 Statement : Type ID {} ASSIGN Exp SC	{
 	typeCheck($1,$5);

@@ -12,6 +12,7 @@
 	extern char* yytext;
 	extern void discoveringYYSTYPE(int yy);
 	TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs);
+	void typeCheck(TypeContainer* lhs,TypeContainer* rhs);
 	int yyerror(const char * message);
 	Scope table;
 	
@@ -53,7 +54,7 @@ Program	: {
 	Enums Funcs 																								{};
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
-FuncDecl : RetType ID LPAREN Formals RPAREN LBRACE Statements RBRACE {
+FuncDecl : RetType ID LPAREN Formals RPAREN LBRACE Statements RBRACE { 
  	vector<string> formals_types = $4->getTypes();	
 	string func_type = makeFunctionType($1->getType(),formals_types);
 	table.addScopeData(ScopeData($2->getName(),0,func_type));
@@ -80,9 +81,13 @@ Statement : LBRACE Statements RBRACE 																	{};
 Statement : Type ID SC 																								{};
 Statement : EnumType ID SC 																						{};
 Statement : EnumDecl 																									{};
-Statement : Type ID ASSIGN Exp SC	 																{};
+Statement : Type ID {} ASSIGN Exp SC	{
+	typeCheck($1,$5);
+	};
 Statement : EnumType ID ASSIGN Exp SC																	{};
-Statement : ID ASSIGN Exp SC 																					{};
+Statement : ID {} ASSIGN Exp SC 	{
+	typeCheck($1->getType(),$4->getType());
+	};
 Statement : Call SC 																									{};
 Statement : RETURN SC																									{};
 Statement : RETURN Exp SC																							{};
@@ -141,3 +146,9 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
   }
   return new Int(lhs->getVal() + rhs->getVal(), "B");
 }
+
+ void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
+	 if(lhs->getType()!=rhs->getType()){
+		 errorMismatch(yylineno);
+	 }
+ }

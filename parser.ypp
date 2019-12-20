@@ -54,7 +54,7 @@ Program	: {
 	Enums Funcs 																								{};
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
-FuncDecl : RetType ID {/*idcheck*/} LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} { 
+FuncDecl : RetType ID {wasDefined($2)} LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} { 
  	vector<string> formals_types = $5->getTypes();	
 	string func_type = makeFunctionType($1->getType(),formals_types);
 	table.addScopeData(ScopeData($2->getName(),0,func_type));
@@ -81,15 +81,22 @@ Statement : LBRACE Statements RBRACE									{};
 Statement : Type ID {wasDefined($2);} SC {
 
 };
-Statement : EnumType ID SC														{};
+Statement : EnumType ID {
+	wasDefined($2);
+} SC														{};
 Statement : EnumDecl		bl															{};
-Statement : Type ID {wasDefined($2);} ASSIGN Exp SC	{
+Statement : Type ID {
+	wasDefined($2);
+	insertToSymbolTable($1,$2);
+	} ASSIGN Exp SC	{
 	typeCheck($1,$5);
 	};
 Statement : EnumType ID {wasDefined($2);} ASSIGN Exp SC {
 
 };
-Statement : ID {wasDefined($2);} ASSIGN Exp SC 	{
+Statement : ID {
+	notDefined($2);
+	} ASSIGN Exp SC 	{
 	typeCheck($1,$4);
 };
 Statement : Call SC																		{};
@@ -100,7 +107,9 @@ Statement : IF LPAREN Exp {isBool($3);} RPAREN Statement ELSE Statement {};
 Statement : WHILE LPAREN Exp {isBool($3);} RPAREN Statement {};
 Statement : BREAK SC																	{};
 Statement : CONTINUE SC																{};
-Call : ID {CheckDefinedFunc($1)} LPAREN ExpList RPAREN {
+Call : ID {
+	CheckDefinedFunc($1);
+	} LPAREN ExpList RPAREN {
 	string& func = $1->getType();
 	int pos = func.find_first_of("->");
 	string prototypes = func.substr(0,pos);
@@ -111,7 +120,9 @@ Call : ID {CheckDefinedFunc($1)} LPAREN ExpList RPAREN {
 		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());						#TODO getTypes returns a vector, should it ?
 	}
 };
-Call : ID {CheckDefinedFunc($1)} LPAREN RPAREN {
+Call : ID {
+	CheckDefinedFunc($1);
+	} LPAREN RPAREN {
 	if($1->getTypes().size() != 0){
 		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes())							#TODO getTypes returns a vector, should it ?
 	}
@@ -184,24 +195,28 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
  void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
 	 if(lhs->getType() != rhs->getType()){
 		 errorMismatch(yylineno);
+		 exit(0);
 	 }
  }
 
  void isBool(TypeContainer* con){
 		if (con->getType() == "BOOL"){
 			errorMismatch(yylineno);
+			exit(0);
 		}
  }
 
  void wasDefined(TypeContainer* con){
 	 if( Scope::exist( con->getName() ){
 		 errorDef(yylineno, con->getName());
+		 exit(0);
 	 }
  }
 
  void notDefined(TypeContainer* con){
 	 if(Scope::exist( !con->getName() )){
 		 errorUndef(yylineno, con->getName());
+		 exit(0);
 	 }
  }
 
@@ -210,22 +225,11 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 	 if( !Scope::exist( con->getName()) ||
 	 			con->getType().find(arrow) == std::string::npos ){
 		 errorUndefFunc(yylineno, con->getName());
+		 exit(0);
 	 }
  }
 
-
-
-enum week {sund ,mon ,tuse ...}
-enum week day = sunday;
-(enum id)-enumtype id
-
-// class "enum" - 
-
-// name week
-// type enum
-
-// class "enumtype"
-
-// name - day
-// type - enum week
-// ....
+void insertToSymbolTable(TypeContainer* type,TypeContainer* id){
+	return;
+	//ScopeData inserted_element = ScopeData(id->getName(),table.nextOffset(),type->getType());
+}

@@ -17,11 +17,13 @@ using std::pair;
 using std::unordered_map;
 
 class Scope {
-  list<list<ScopeData>> scopes;
-  unordered_map<string, pair<ScopeData, int>> symbol_map;
-  int current_scope_level = 0;
+  vector<unordered_map<string,ScopeData>> symbol_table;
+  // list<list<ScopeData>> scopes;
+  // unordered_map<string, pair<ScopeData, int>> Symbol_map;
+  // int current_scope_level = 0;
 
  public:
+  bool exist(string id);
   void insertScope();
   void removeScope();
   void addScopeData(ScopeData scope_data);

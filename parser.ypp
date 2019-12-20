@@ -78,18 +78,18 @@ Enumerator : ID																				{};
 Statements : Statement																{};
 Statements : Statements Statement											{};
 Statement : LBRACE Statements RBRACE									{};
-Statement : Type ID SC {
-	wasDefined($2);
+Statement : Type ID {wasDefined($2);} SC {
+
 };
 Statement : EnumType ID SC														{};
 Statement : EnumDecl																	{};
-Statement : Type ID {WasDefined($2);} ASSIGN Exp SC	{
+Statement : Type ID {wasDefined($2);} ASSIGN Exp SC	{
 	typeCheck($1,$5);
 	};
-Statement : EnumType ID ASSIGN Exp SC {
-	wasDefined($2);
+Statement : EnumType ID {wasDefined($2);} ASSIGN Exp SC {
+
 };
-Statement : ID {WasDefined($2);} ASSIGN Exp SC 	{
+Statement : ID {wasDefined($2);} ASSIGN Exp SC 	{
 	typeCheck($1,$4);
 	};
 Statement : Call SC																		{};
@@ -101,8 +101,14 @@ Statement : WHILE LPAREN Exp {isBool($3);} RPAREN Statement {};
 Statement : BREAK SC																	{};
 Statement : CONTINUE SC																{};
 Call : ID {CheckDefinedFunc($1)} LPAREN ExpList RPAREN {
-	if($1->getTypes() != $3->getTypes){																						#TODO overload != of vector types or function it.
-		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes())							#TODO getTypes returns a vector, should it ?
+	string& func = $1->getType();
+	int pos = func.find_first_of("->");
+	string prototypes = func.substr(0,pos);
+	string temp = makeFunctionType("void", $4->getTypes());
+	pos = temp.find_first_of("->");
+	string prototypes_two = temp.substr(0,pos);
+	if(prototypes != prototypes_two){
+		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());						#TODO getTypes returns a vector, should it ?
 	}
 };
 Call : ID {CheckDefinedFunc($1)} LPAREN RPAREN {
@@ -181,26 +187,28 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 	 }
  }
 
- bool isBool(TypeContainer* con){
+ void isBool(TypeContainer* con){
 		if (con->getType() == "BOOL"){
 			errorMismatch(yylineno);
 		}
  }
 
  void wasDefined(TypeContainer* con){
-	 if(#notInTable){
+	 if( Scope::exist( con->getName() ){
 		 errorDef(yylineno, con->getName());
 	 }
  }
 
  void notDefined(TypeContainer* con){
-	 if(#notInTable){
+	 if(Scope::exist( !con->getName() )){
 		 errorUndef(yylineno, con->getName());
 	 }
  }
 
  void CheckDefinedFunc(TypeContainer* con){
-	if(con->getName != "FUNC" || #notInTable){
-		errorUndefFunc(yylineno, $1->getName());
-	}
+	 string arrow = "->";
+	 if( !Scope::exist( con->getName()) ||
+	 			con->getType().find(arrow) == std::string::npos ){
+		 errorUndefFunc(yylineno, con->getName());
+	 }
  }

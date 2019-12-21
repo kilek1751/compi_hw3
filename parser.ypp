@@ -124,6 +124,7 @@ Statement : Type ID {
     } SC {
 };
 Statement : EnumType ID {
+    notDefined($1);
 	wasDefined($2);
 } SC														{};
 Statement : EnumDecl															{};

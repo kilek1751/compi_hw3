@@ -213,14 +213,14 @@ void isBool(TypeContainer* con){
  }
 
 void wasDefined(TypeContainer* con){
-	if( Scope::exist( con->getName() ){
+	if( table.exist( con->getName() )){
 		errorDef(yylineno, con->getName());
 		exit(0);
 	}
 }
 
 void notDefined(TypeContainer* con){
-	 if(Scope::exist( !con->getName() )){
+	 if(!table.exist( con->getName() )){
 		errorUndef(yylineno, con->getName());
 		exit(0);
 	}
@@ -228,7 +228,7 @@ void notDefined(TypeContainer* con){
 
 void CheckDefinedFunc(TypeContainer* con){
 	 string arrow = "->";
-	 if( !Scope::exist( con->getName()) ||
+	 if( !table.exist( con->getName()) ||
 	 			con->getType().find(arrow) == std::string::npos ){
 		 errorUndefFunc(yylineno, con->getName());
 		 exit(0);

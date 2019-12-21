@@ -18,10 +18,10 @@ class TypeContainer {
   TypeContainer() : type("NO_TYPE"){};
   void printData() { std::cout << type << endl; }
   string getType() { return type; };
-  vector<string> virtual getTypes(){};
+  vector<string> virtual getTypes();
   void virtual printContent(){};
-  int virtual getVal(){};
-  string virtual getName(){};
+  int virtual getVal();
+  string virtual getName();
   void virtual addType(string some_type){};
   void virtual addTypes(vector<string> to_add_types){};
 };

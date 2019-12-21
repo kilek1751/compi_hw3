@@ -23,7 +23,7 @@ void Scope::removeScope() {
 }
 
 void Scope::addScopeData(ScopeData scope_data) {
-  (symbol_table.back())[scope_data.getName()] = scope_data;
+  (symbol_table.back())[scope_data.getNameCopy()] = scope_data;
   // if (symbol_map.find(scope_data.getNameCopy()) != symbol_map.end()) {
   //   cout << "Error already inside symbol table" << endl;
   //   return;
@@ -43,8 +43,8 @@ void Scope::printData() {
 }
 
 void Scope::printLastScopeData() {
-  unordered_map<string, ScopeData> last_scope = symbol_map.back();
-  for (auto const& data : current_scope) {
+    unordered_map<string, ScopeData> last_scope = symbol_table.back();
+  for (auto const& data : last_scope) {
     printID(data.second.getNameCopy(), data.second.getRelLocationCopy(),
             data.second.getTypeCopy());
   }

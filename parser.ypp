@@ -24,6 +24,7 @@
     void numCheck(TypeContainer* data);
     string getFunctionParameters(string id);
     vector<string> functionTypeToVector(string function_type);
+    string getFunctionFullType(string id);
 	Scope table;
     int while_count = 0;
     string last_function_ret_type = "VOID";
@@ -49,7 +50,6 @@
 
 
 %%
-
 Program	: {
 	table.insertScope();
 	vector<string> print_func_args;
@@ -60,7 +60,7 @@ Program	: {
 	string printi_func_type = makeFunctionType("VOID",printi_func_args);
 	table.addFuncData(ScopeData("print",0,print_func_type));
 	table.addFuncData(ScopeData("printi",0,printi_func_type));
-}
+    }
 	Enums Funcs {
         if (!is_main_defined){
             errorMainMissing();
@@ -71,7 +71,7 @@ Program	: {
             errorMainMissing();
             exit(0);
         }
-    }																								{};
+    }				{};
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
 FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
@@ -188,13 +188,14 @@ Call : CheckFunc LPAREN ExpList RPAREN {
 	} */
 };
 Call : CheckFunc LPAREN RPAREN {
-    /*
-    string func_type = getActualType($1);
+    
+    string func_type = getFunctionFullType($1->getName());
     vector<string> func_params = functionTypeToVector(func_type);
-	if(getFunctionParameters($1)!="()"){
+    
+	if(getFunctionParameters($1->getName())!="()"){
 		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
 	} 
-    */
+    
 };
 CheckFunc : ID {
     CheckDefinedFunc($1);
@@ -246,13 +247,13 @@ Exp : Exp RELOP Exp  {
     numCheck($1);
     numCheck($3);
 	typeCheck($1,$3);
-	$$=new Bool(yytext,"BOOL");
+	$$=new Bool(true,"BOOL");
 };
 Exp : Exp RELEQ Exp{
     numCheck($1);
     numCheck($3);
 	typeCheck($1,$3);
-	$$=new Bool(yytext,"BOOL");
+	$$=new Bool(false,"BOOL");
 };
 Exp : LPAREN Type {
     if($2->getType()!="INT"){
@@ -294,7 +295,6 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
     string lhs_type = getActualType(lhs);
     string rhs_type = getActualType(rhs);
-    
 	 if(lhs_type != rhs_type){
 		errorMismatch(yylineno);
 		exit(0);
@@ -379,7 +379,6 @@ string getFunctionParameters(string id){
     std::size_t location = type.find("->");
     type = type.substr(0,location);
     return type;
-
 }
 
 
@@ -397,4 +396,8 @@ vector<string> functionTypeToVector(string function_type) {
     s.erase(0, pos + delimiter.length());
   }
   return output_vector;
+}
+
+string getFunctionFullType(string id){
+    return table.getDataCopy(id).getTypeCopy();
 }

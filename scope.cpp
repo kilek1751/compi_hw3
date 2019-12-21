@@ -41,8 +41,7 @@ void Scope::addScopeData(ScopeData scope_data) {
   (symbol_table.back())[scope_data.getNameCopy()] = scope_data;
   insertion_order.back().push_back(scope_data.getNameCopy());
   vector<string> enum_values = scope_data.getEnumValues();
-  if(enum_values.size() == 0)
-    offsetStack.top() += 1;
+  if (enum_values.size() == 0) offsetStack.top() += 1;
   for (string enum_id : enum_values) {
     enum_ids.back().push_back(enum_id);
   }

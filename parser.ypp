@@ -19,9 +19,9 @@
 	void CheckDefinedFunc(TypeContainer* con);
 	void insertToSymbolTable(TypeContainer* type,TypeContainer* id);
     string getActualType(TypeContainer* some_data);
-    string makeEnumType(vector<string> enum_names);
 	int yyerror(const char * message);
     string getRetType(ScopeData some_func);
+    void numCheck(TypeContainer* data);
 	Scope table;
     int while_count = 0;
     string last_function_ret_type = "VOID";
@@ -29,7 +29,7 @@
 
 %}
 
-%token LEXERROR BOOL
+%token BOOL
 %token VOID INT BYTE B ENUM TRUE FALSE RETURN WHILE IF
 %token BREAK CONTINUE SC COMMA LPAREN RPAREN LBRACE RBRACE
 %token  ID NUM STRING
@@ -42,7 +42,6 @@
 %left BINOPH
 %right CAST
 %right NOT
-%left PARANS
 %nonassoc THEN
 %nonassoc ELSE
 
@@ -203,11 +202,13 @@ Type : BOOL																						{$$=$1;};
 EnumType : ENUM ID																		{$$=new Enum($2->getName(),"ENUM");};
 Exp : LPAREN Exp RPAREN																{$$=$2;};
 Exp : Exp BINOPH Exp {
-	typeCheck($1,$3);
+	numCheck($1);
+    numCheck($2);
 	$$ = binOpType($1,$3);
 };
 Exp : Exp BINOPL Exp {
-	typeCheck($1,$3);
+	numCheck($1);
+    numCheck($3);
 	$$ = binOpType($1,$3);
 };
 Exp : ID																							{$$=new Id(yytext,"ID");};
@@ -222,24 +223,29 @@ Exp : NUM B		{
 Exp : STRING																					{$$=new String(yytext,"STRING");};
 Exp : TRUE																						{$$=new Bool(true,"BOOL");};
 Exp : FALSE																						{$$=new Bool(false,"BOOL");};
-Exp : NOT Exp	{
+Exp : NOT Exp {
     isBool($2);
     $$=new Bool(!(((Bool*)$2)->getValue()),"BOOL");
 };
 Exp : Exp AND Exp {
 	isBool($1);
-	isBool($2);
-	$$=new Bool(yytext,"BOOL");};
-Exp : Exp OR Exp {
-	isBool($1);
-	isBool($2);
+	isBool($3);
 	$$=new Bool(yytext,"BOOL");
 };
-Exp : Exp RELOP Exp {
+Exp : Exp OR Exp {
+	isBool($1);
+	isBool($3);
+	$$=new Bool(yytext,"BOOL");
+};
+Exp : Exp RELOP Exp  {
+    numCheck($1);
+    numCheck($3);
 	typeCheck($1,$3);
 	$$=new Bool(yytext,"BOOL");
 };
-Exp : Exp RELEQ Exp {
+Exp : Exp RELEQ Exp{
+    numCheck($1);
+    numCheck($3);
 	typeCheck($1,$3);
 	$$=new Bool(yytext,"BOOL");
 };
@@ -247,8 +253,13 @@ Exp : LPAREN Type {
     if($2->getType()!="INT"){
         errorMismatch(yylineno);
         exit(0);
-    }
-    } RPAREN Exp %prec CAST								{$$=$2;};
+    } } RPAREN Exp %prec CAST {
+        if (getActualType($5)!="ENUM"){
+            errorMismatch(yylineno);
+            exit(0);
+        }
+        $$=$2;
+};
 
 %%
 
@@ -327,6 +338,7 @@ void CheckDefinedFunc(TypeContainer* con){
      }
 }
 
+
 void insertToSymbolTable(TypeContainer* type,TypeContainer* id){
 	ScopeData inserted_element = ScopeData(id->getName(),table.getNextOffset(),type->getType());
 	table.addScopeData(inserted_element);
@@ -345,13 +357,13 @@ string getActualType(TypeContainer* some_data){
     }
     return type;
 }
-/* this function will probably die*/
-string makeEnumType(vector<string> enum_names){
-    string output_string = "";
-    for (string enum_name : enum_names){
-        output_string+=enum_name+";";
+
+void numCheck(TypeContainer* data){
+    string type = getActualType(data);
+    if (type!="INT" || type!="BYTE"){
+        errorMismatch(yylineno);
+        exit(0);
     }
-    return output_string;
 }
 
 string getRetType(ScopeData some_func){

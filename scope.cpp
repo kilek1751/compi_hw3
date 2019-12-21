@@ -12,7 +12,11 @@ bool Scope::exist(string id) {
 }
 
 void Scope::insertScope() {
-    offsetStack.push(offsetStack.top());
+    if(offsetStack.size() == 0){
+        offsetStack.push(0);
+    }else{
+        offsetStack.push(offsetStack.top());
+    }
     symbol_table.push_back(unordered_map<string, ScopeData>());
 }
 
@@ -23,9 +27,8 @@ void Scope::removeScope() {
 
 void Scope::addScopeData(ScopeData scope_data) {
     (symbol_table.back())[scope_data.getNameCopy()] = scope_data;
-    offsetStack.top()++;
+    offsetStack.top() += 1;
 }
-
 
 void Scope::addFuncData(ScopeData scope_data) {
     (symbol_table.back())[scope_data.getNameCopy()] = scope_data;

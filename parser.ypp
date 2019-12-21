@@ -21,9 +21,11 @@
     string getActualType(TypeContainer* some_data);
     string makeEnumType(vector<string> enum_names);
 	int yyerror(const char * message);
+    string getRetType(ScopeData some_func);
 	Scope table;
     int while_count = 0;
     string last_function_ret_type = "VOID";
+    bool is_main_defined = false;
 
 %}
 
@@ -60,11 +62,25 @@ Program	: {
 	endScope();
 	table.printLastScopeData();
 }
-	Enums Funcs 																								{};
+	Enums Funcs {
+        if (!is_main_defined){
+            errorMainMissing();
+            exit(0);
+        }
+        ScopeData main_data = table.getDataCopy("main");
+        string ret_type = getRetType(main_data);
+        if (ret_type!="VOID"){
+            errorMainMissing();
+            exit(0);
+        }
+    }																								{};
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
 FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
     wasDefined($3);
+    if ($3->getName()=="main"){
+        is_main_defined=true;
+    }
     } LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} {
  	vector<string> formals_types = $6->getTypes();
 	string func_type = makeFunctionType($1->getType(),formals_types);
@@ -185,7 +201,12 @@ Exp : Exp BINOPL Exp {
 Exp : ID																							{$$=new Id(yytext,"ID");};
 Exp : Call																						{$$=$1;};
 Exp : NUM																							{$$=new Int(yytext,"INT");};
-Exp : NUM B																						{$$=new Byte($1->getVal(),"BYTE");};
+Exp : NUM B		{
+    if ($1->getVal()>255){
+        errorByteTooLarge(yylineno,std::to_string($1->getVal()));
+    }
+    $$=new Byte($1->getVal(),"BYTE");
+};
 Exp : STRING																					{$$=new String(yytext,"STRING");};
 Exp : TRUE																						{$$=new Bool(true,"BOOL");};
 Exp : FALSE																						{$$=new Bool(false,"BOOL");};
@@ -318,4 +339,11 @@ string makeEnumType(vector<string> enum_names){
         output_string+=enum_name+";";
     }
     return output_string;
+}
+
+string getRetType(ScopeData some_func){
+    string type = some_func.getTypeCopy();
+    std::size_t location = type.find("->");
+    type = type.substr(location+2);
+    return type;
 }

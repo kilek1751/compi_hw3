@@ -114,7 +114,11 @@ Enumerator : ID	{
 };
 Statements : Statement																{};
 Statements : Statements Statement											{};
-Statement : LBRACE {/*startscope*/} Statements RBRACE /*endscope*/									{};
+Statement : LBRACE {table.insertScope();} Statements RBRACE {
+    endScope();
+    table.printLastScopeData();
+    table.removeScope();
+};
 Statement : Type ID {
     wasDefined($2);
     insertToSymbolTable($1,$2);
@@ -146,9 +150,19 @@ Statement : RETURN Exp {
         errorMismatch(yylineno);
     }
 } SC	
-Statement : IF LPAREN CheckType RPAREN Statement %prec THEN	{};
-Statement : IF LPAREN CheckType RPAREN Statement ELSE Statement {};
-Statement : WHILE LPAREN CheckType RPAREN {while_count++;} Statement 	{while_count--;};
+Statement : IF LPAREN CheckType RPAREN InsertScope
+    Statement %prec THEN RemoveScope
+Statement : IF LPAREN CheckType RPAREN InsertScope Statement RemoveScope ELSE InsertScope Statement RemoveScope
+Statement : WHILE LPAREN CheckType RPAREN {
+    while_count++;
+    table.insertScope();
+    } Statement {
+        while_count--;
+        table.printLastScopeData();
+        table.removeScope();
+};
+InsertScope : {table.insertScope();}
+RemoveScope : {table.removeScope();}
 CheckType : Exp {isBool($1);};
 Statement : BREAK SC  {
     if (while_count==0){

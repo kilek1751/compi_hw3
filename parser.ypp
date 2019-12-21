@@ -22,6 +22,8 @@
     string makeEnumType(vector<string> enum_names);
 	int yyerror(const char * message);
 	Scope table;
+    int while_count = 0;
+    string last_function_ret_type = "VOID";
 
 %}
 
@@ -61,10 +63,12 @@ Program	: {
 	Enums Funcs 																								{};
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
-FuncDecl : RetType ID {wasDefined($2);} LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} {
- 	vector<string> formals_types = $5->getTypes();
+FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
+    wasDefined($3);
+    } LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} {
+ 	vector<string> formals_types = $6->getTypes();
 	string func_type = makeFunctionType($1->getType(),formals_types);
-	table.addFuncData(ScopeData($2->getName(),0,func_type));
+	table.addFuncData(ScopeData($3->getName(),0,func_type));
 	endScope();
 	table.printLastScopeData();
 };
@@ -96,7 +100,7 @@ Enumerator : ID	{
 };
 Statements : Statement																{};
 Statements : Statements Statement											{};
-Statement : LBRACE Statements RBRACE									{};
+Statement : LBRACE {/*startscope*/} Statements RBRACE /*endscope*/									{};
 Statement : Type ID {
     wasDefined($2);
     insertToSymbolTable($1,$2);
@@ -112,19 +116,36 @@ Statement : Type ID {
 	} ASSIGN Exp SC	{
 	typeCheck($1,$5);
 	};
-Statement : EnumType ID {wasDefined($2);} ASSIGN Exp SC {
-
+Statement : EnumType ID {wasDefined($2);} ASSIGN Exp {  
+    typeCheck($2,$5);
+    } SC {
 };
 Statement : ID { notDefined($1);} ASSIGN Exp SC {typeCheck($1,$4);};
 Statement : Call SC																		{};
-Statement : RETURN SC																	{};
-Statement : RETURN Exp SC															{};
+Statement : RETURN SC 	{
+    if (last_function_ret_type!="VOID"){
+        errorMismatch(yylineno);
+    }
+};
+Statement : RETURN Exp {
+    if (getActualType($2)!=last_function_ret_type){
+        errorMismatch(yylineno);
+    }
+} SC	
 Statement : IF LPAREN CheckType RPAREN Statement %prec THEN	{};
 Statement : IF LPAREN CheckType RPAREN Statement ELSE Statement {};
-Statement : WHILE LPAREN CheckType RPAREN Statement 	{};
+Statement : WHILE LPAREN CheckType RPAREN {while_count++;} Statement 	{while_count--;};
 CheckType : Exp {isBool($1);};
-Statement : BREAK SC																	{};
-Statement : CONTINUE SC																{};
+Statement : BREAK SC  {
+    if (while_count==0){
+        errorUnexpectedBreak(yylineno);
+    }
+};
+Statement : CONTINUE SC	{
+    if(while_count==0){
+        errorUnexpectedContinue(yylineno);
+    }
+};
 Call : CheckFunc LPAREN ExpList RPAREN {
 	/*
 	string& func = $1->getType();
@@ -189,7 +210,12 @@ Exp : Exp RELEQ Exp {
 	typeCheck($1,$3);
 	$$=new Bool(yytext,"BOOL");
 };
-Exp : LPAREN Type RPAREN Exp %prec CAST								{$$=$2;};
+Exp : LPAREN Type {
+    if($2->getType()!="INT"){
+        errorMismatch(yylineno);
+        exit(0);
+    }
+    } RPAREN Exp %prec CAST								{$$=$2;};
 
 %%
 

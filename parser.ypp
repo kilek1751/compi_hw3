@@ -27,6 +27,7 @@
     string getFunctionFullType(string id);
     vector<string> getFunctionParameters(string id);
     void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp);
+    vector<ScopeData> createFuncArgsVec(TypeContainer* formals);
 	Scope table;
     int while_count = 0;
     string last_function_ret_type = "VOID";
@@ -81,7 +82,11 @@ FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
     if ($3->getName()=="main"){
         is_main_defined=true;
     }
-    } LPAREN Formals RPAREN LBRACE {table.insertScope();} Statements RBRACE  {
+    } LPAREN Formals RPAREN LBRACE {
+        table.insertScope();
+        vector<ScopeData> created_args = createFuncArgsVec($6);
+        table.insertFuncArgs(created_args);
+    } Statements RBRACE  {
  	vector<string> formals_types = $6->getTypes();
 	string func_type = makeFunctionType($1->getType(),formals_types);
 	endScope();
@@ -420,4 +425,16 @@ void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp){
         errorMismatch(yylineno);
         exit(0);
     }
+}
+
+
+vector<ScopeData> createFuncArgsVec(TypeContainer* formals){
+    vector<Id> id_vec = ((FormalListClass*)formals)->getIds();
+    vector<ScopeData> output_vec;
+    int i=-1;
+    for (Id id : id_vec){
+        output_vec.push_back(ScopeData(id.getName(),i,id.getType()));
+        i--;
+    }
+    return output_vec;
 }

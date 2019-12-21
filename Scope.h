@@ -22,6 +22,7 @@ class Scope {
   vector<vector<string>> insertion_order;
   stack<int> offsetStack;
   vector<vector<string>> enum_ids;
+  vector<vector<ScopeData>> func_args_vec;
 
  public:
   bool exist(string id);
@@ -34,6 +35,7 @@ class Scope {
   void printData();
   int getNextOffset();
   void printTable();
+  void insertFuncArgs(vector<ScopeData> func_args);
   // void discoveringYYSTYPE(int yy);
 };
 

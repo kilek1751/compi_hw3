@@ -3,12 +3,12 @@
 #include "Scope.h"
 #include <stdexcept>
 bool Scope::exist(string id) {
-  for (auto const& current_scope : symbol_table) {
-    if (current_scope.find(id) != current_scope.end()) {
-      return true;
+    for (auto const& current_scope : symbol_table) {
+        if (current_scope.find(id) != current_scope.end()) {
+            return true;
+        }
     }
-  }
-  return false;
+    return false;
 }
 
 void Scope::insertScope() {
@@ -35,32 +35,41 @@ void Scope::addFuncData(ScopeData scope_data) {
 }
 
 void Scope::printData() {
-  for (auto const& current_scope : symbol_table) {
-    for (auto const& data : current_scope) {
-      if(!data.second.getEnumValues().size()){
-          printID(data.second.getNameCopy(),
-                  data.second.getRelLocationCopy(),
-                  data.second.getTypeCopy());
-      }else {
-          vector<string> temp = data.second.getEnumValues();
-          printEnumType(data.second.getNameCopy(), temp);
-      }
+    vector<ScopeData> enums;
+    for (auto const& current_scope : symbol_table) {
+        for (auto const& data : current_scope) {
+            if(!data.second.getEnumValues().size()){
+                printID(data.second.getNameCopy(),
+                        data.second.getRelLocationCopy(),
+                        data.second.getTypeCopy());
+            }else {
+                vector<string> temp = data.second.getEnumValues();
+                printEnumType(data.second.getNameCopy(), temp);
+            }
+            for(auto enum_to_print: enums ){
+                vector<string> temp = enum_to_print.getEnumValues();
+                printEnumType(enum_to_print.getNameCopy(), temp);
+            }
+        }
     }
-  }
 }
 
 void Scope::printLastScopeData() {
-  unordered_map<string, ScopeData> last_scope = symbol_table.back();
-  for (auto const& data : last_scope) {
-      if(!data.second.getEnumValues().size()){
-          printID(data.second.getNameCopy(),
-                  data.second.getRelLocationCopy(),
-                  data.second.getTypeCopy());
-      }else {
-          vector<string> temp = data.second.getEnumValues();
-          printEnumType(data.second.getNameCopy(), temp);
-      }
-  }
+    vector<ScopeData> enums;
+    unordered_map<string, ScopeData> last_scope = symbol_table.back();
+    for (auto const& data : last_scope) {
+        if(!data.second.getEnumValues().size()){
+            printID(data.second.getNameCopy(),
+                    data.second.getRelLocationCopy(),
+                    data.second.getTypeCopy());
+        } else {
+            enums.push_back(data.second);
+        }
+    }
+    for(auto enum_to_print: enums ){
+        vector<string> temp = enum_to_print.getEnumValues();
+        printEnumType(enum_to_print.getNameCopy(), temp);
+    }
 }
 
 int Scope::getNextOffset() {
@@ -68,11 +77,11 @@ int Scope::getNextOffset() {
 }
 
 ScopeData Scope::getDataCopy(string id) {
-  for (unordered_map<string, ScopeData> curr_scope : symbol_table) {
-    if (curr_scope.find(id) != curr_scope.end()) {
-      return (curr_scope.find(id))->second;
+    for (unordered_map<string, ScopeData> curr_scope : symbol_table) {
+        if (curr_scope.find(id) != curr_scope.end()) {
+            return (curr_scope.find(id))->second;
+        }
     }
-  }
     throw std::exception();
 }
 

@@ -48,6 +48,7 @@ void Scope::printData() {
             }
             for(auto enum_to_print: enums ){
                 vector<string> temp = enum_to_print.getEnumValues();
+                std::reverse(temp.begin(), temp.end());
                 printEnumType(enum_to_print.getNameCopy(), temp);
             }
         }
@@ -68,6 +69,7 @@ void Scope::printLastScopeData() {
     }
     for(auto enum_to_print: enums ){
         vector<string> temp = enum_to_print.getEnumValues();
+        std::reverse(temp.begin(), temp.end());
         printEnumType(enum_to_print.getNameCopy(), temp);
     }
 }

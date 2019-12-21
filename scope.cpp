@@ -23,8 +23,7 @@ void Scope::removeScope() {
 }
 
 void Scope::addScopeData(ScopeData scope_data) {
-    (symbol_table.back())[scope_data.getNameCopy()] = scope_data;
-    std::cout << "added the scope data - " << scope_data.getNameCopy() << ", " << getNextOffset() << ", " <<  scope_data.getTypeCopy() <<std::endl;
+  (symbol_table.back())[scope_data.getNameCopy()] = scope_data;
   // if (symbol_map.find(scope_data.getNameCopy()) != symbol_map.end()) {
   //   cout << "Error already inside symbol table" << endl;
   //   return;

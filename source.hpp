@@ -133,6 +133,13 @@ class FormalListClass : public TypeContainer {
     }
     return output_vec;
   }
+  vector<string> getNames() {
+    vector<string> output_vec;
+    for (Id id : formals) {
+      output_vec.push_back(id.getName());
+    }
+    return output_vec;
+  }
 };
 
 #define YYSTYPE TypeContainer*

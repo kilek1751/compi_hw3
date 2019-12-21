@@ -19,6 +19,7 @@
 	void CheckDefinedFunc(TypeContainer* con);
 	void insertToSymbolTable(TypeContainer* type,TypeContainer* id);
     string getActualType(TypeContainer* some_data);
+    string makeEnumType(vector<string> enum_names);
 	int yyerror(const char * message);
 	Scope table;
 
@@ -71,7 +72,11 @@ Enums : /*epsilon*/																		{};
 Enums : EnumDecl Enums																{};
 EnumDecl : ENUM ID {
 	wasDefined($2);
-} LBRACE EnumeratorList RBRACE SC		{};
+} LBRACE EnumeratorList RBRACE SC   {
+    vector<string> enum_names = ((FormalListClass*)$5)->getNames();
+    string enum_str = makeEnumType(enum_names);
+    table.addScopeData(ScopeData($2->getName(),0,enum_str));
+};
 RetType : Type																				{$$=$1;};
 RetType : VOID																				{$$=$1;};
 Formals : /*epsilon*/																	{$$ = new FormalListClass();};
@@ -79,12 +84,15 @@ Formals : FormalsList																	{$$=$1;};
 FormalsList : FormalDecl															{$$=$1;};
 FormalsList : FormalDecl COMMA FormalsList						{((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
 FormalDecl : Type ID																	{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
-FormalDecl : EnumType ID															{/*$$=new FormalListClass(Id($2->getName(),$1->getType()));*/};
-EnumeratorList : Enumerator														{/*$$=new FormalListClass($1->getName(),$1->getType());*/};
-EnumeratorList : EnumeratorList COMMA Enumerator			{/*((FormalListClass*)$3)->addIds(((FormalListClass*)$1)->getIds());$$=$3;*/};
+FormalDecl : EnumType ID															{$$=$1;};
+EnumeratorList : Enumerator														{$$=new FormalListClass(Id($1->getName(),$1->getType()));};
+EnumeratorList : EnumeratorList COMMA Enumerator	{
+    ((FormalListClass*)$3)->addIds(((FormalListClass*)$1)->getIds());
+    $$=$3;
+};
 Enumerator : ID	{
 	wasDefined($1);
-	$$=$1;
+	$$=new FormalListClass(Id($1->getName(),$1->getType()));
 };
 Statements : Statement																{};
 Statements : Statements Statement											{};
@@ -276,4 +284,12 @@ string getActualType(TypeContainer* some_data){
         type = type.substr(location+2);
     }
     return type;
+}
+/* this function will probably die*/
+string makeEnumType(vector<string> enum_names){
+    string output_string = "";
+    for (string enum_name : enum_names){
+        output_string+=enum_name+";";
+    }
+    return output_string;
 }

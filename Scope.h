@@ -19,6 +19,7 @@ using std::unordered_map;
 
 class Scope {
     vector<unordered_map<string, ScopeData>> symbol_table;
+    vector<vector<string>> insertion_order;
     stack<int> offsetStack;
 
  public:

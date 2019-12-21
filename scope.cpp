@@ -37,8 +37,14 @@ void Scope::addFuncData(ScopeData scope_data) {
 void Scope::printData() {
   for (auto const& current_scope : symbol_table) {
     for (auto const& data : current_scope) {
-      printID(data.second.getNameCopy(), data.second.getRelLocationCopy(),
-              data.second.getTypeCopy());
+      if(!data.second.getEnumValues().size()){
+          printID(data.second.getNameCopy(),
+                  data.second.getRelLocationCopy(),
+                  data.second.getTypeCopy());
+      }else {
+          vector<string> temp = data.second.getEnumValues();
+          printEnumType(data.second.getNameCopy(), temp);
+      }
     }
   }
 }
@@ -46,8 +52,14 @@ void Scope::printData() {
 void Scope::printLastScopeData() {
   unordered_map<string, ScopeData> last_scope = symbol_table.back();
   for (auto const& data : last_scope) {
-    printID(data.second.getNameCopy(), data.second.getRelLocationCopy(),
-            data.second.getTypeCopy());
+      if(!data.second.getEnumValues().size()){
+          printID(data.second.getNameCopy(),
+                  data.second.getRelLocationCopy(),
+                  data.second.getTypeCopy());
+      }else {
+          vector<string> temp = data.second.getEnumValues();
+          printEnumType(data.second.getNameCopy(), temp);
+      }
   }
 }
 

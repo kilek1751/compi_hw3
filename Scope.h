@@ -31,7 +31,6 @@ class Scope {
     void printLastScopeData();
     void printData();
     int getNextOffset();
-    friend ostream& operator<<(ostream& out, const Scope& scope);
     // void discoveringYYSTYPE(int yy);
 };
 

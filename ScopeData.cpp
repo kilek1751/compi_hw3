@@ -8,10 +8,12 @@ ScopeData::ScopeData() {
   type = "";
 }
 
-ScopeData::ScopeData(string data_name, int rel_loc, string data_type) {
-  name = data_name;
-  realtive_location = rel_loc;
-  type = data_type;
+ScopeData::ScopeData(string data_name, int rel_loc, string data_type, vector<string>& enums)
+    : name(data_name), realtive_location(rel_loc), type(data_type), enums(enums)  {
+}
+
+ScopeData::ScopeData(string data_name, int rel_loc, string data_type)
+    : name(data_name), realtive_location(rel_loc), type(data_type)  {
 }
 
 ostream &operator<<(ostream &out, const ScopeData &scope_data) {
@@ -32,3 +34,5 @@ string ScopeData::getNameCopy() const { return name; }
 int ScopeData::getRelLocationCopy() const { return realtive_location; }
 
 string ScopeData::getTypeCopy() const { return type; }
+    
+vector<string> ScopeData::getEnumValues() const { return enums; }

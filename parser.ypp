@@ -22,6 +22,8 @@
 	int yyerror(const char * message);
     string getRetType(ScopeData some_func);
     void numCheck(TypeContainer* data);
+    string getFunctionParameters(string id);
+    vector<string> functionTypeToVector(string function_type);
 	Scope table;
     int while_count = 0;
     string last_function_ret_type = "VOID";
@@ -185,10 +187,14 @@ Call : CheckFunc LPAREN ExpList RPAREN {
 		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
 	} */
 };
-Call : CheckFunc LPAREN RPAREN {/*
-	if($1->getTypes().size() != 0){
-		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
-	} */
+Call : CheckFunc LPAREN RPAREN {
+    /*
+    string func_type = getActualType($1);
+    vector<string> func_params = functionTypeToVector(func_type);
+	if(getFunctionParameters($1)!="()"){
+		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+	} 
+    */
 };
 CheckFunc : ID {
     CheckDefinedFunc($1);
@@ -374,4 +380,21 @@ string getFunctionParameters(string id){
     type = type.substr(0,location);
     return type;
 
+}
+
+
+vector<string> functionTypeToVector(string function_type) {
+  function_type = function_type.substr(0, function_type.find("->"));
+  function_type = function_type.substr(1, function_type.length() - 1);
+  std::string s = function_type;
+  std::string delimiter = ",";
+  vector<string> output_vector;
+  size_t pos = 0;
+  std::string token;
+  while ((pos = s.find(delimiter)) != std::string::npos) {
+    token = s.substr(0, pos);
+    output_vector.push_back(token);
+    s.erase(0, pos + delimiter.length());
+  }
+  return output_vector;
 }

@@ -63,7 +63,9 @@ FuncDecl : RetType ID {wasDefined($2)} LPAREN Formals RPAREN LBRACE {/*startscop
 };
 Enums : /*epsilon*/																		{};
 Enums : EnumDecl Enums																{};
-EnumDecl : ENUM ID LBRACE EnumeratorList RBRACE SC		{};
+EnumDecl : ENUM ID {
+	wasDefined($2);
+} LBRACE EnumeratorList RBRACE SC		{};
 RetType : Type																				{$$=$1;};
 RetType : VOID																				{$$=$1;};
 Formals : /*epsilon*/																	{$$ = new FormalListClass();};
@@ -72,9 +74,12 @@ FormalsList : FormalDecl															{$$=$1;};
 FormalsList : FormalDecl COMMA FormalsList						{((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
 FormalDecl : Type ID																	{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
 FormalDecl : EnumType ID															{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
-EnumeratorList : Enumerator														{};
-EnumeratorList : EnumeratorList COMMA Enumerator			{};
-Enumerator : ID																				{};
+EnumeratorList : Enumerator														{$$=new FormalListClass(*$1);};
+EnumeratorList : EnumeratorList COMMA Enumerator			{$3->addIds($1->getIds());$$=$3;};
+Enumerator : ID	{
+	wasDefined($1);
+	$$=$1;
+};
 Statements : Statement																{};
 Statements : Statements Statement											{};
 Statement : LBRACE Statements RBRACE									{};

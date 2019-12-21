@@ -59,8 +59,6 @@ Program	: {
 	string printi_func_type = makeFunctionType("VOID",printi_func_args);
 	table.addFuncData(ScopeData("print",0,print_func_type));
 	table.addFuncData(ScopeData("printi",0,printi_func_type));
-	endScope();
-	table.printLastScopeData();
 }
 	Enums Funcs {
         if (!is_main_defined){
@@ -68,8 +66,7 @@ Program	: {
             exit(0);
         }
         ScopeData main_data = table.getDataCopy("main");
-        string ret_type = getRetType(main_data);
-        if (ret_type!="VOID"){
+        if (main_data.getTypeCopy()!="()->VOID"){
             errorMainMissing();
             exit(0);
         }
@@ -81,12 +78,13 @@ FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
     if ($3->getName()=="main"){
         is_main_defined=true;
     }
-    } LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} {
+    } LPAREN Formals RPAREN LBRACE {table.insertScope();} Statements RBRACE  {
  	vector<string> formals_types = $6->getTypes();
 	string func_type = makeFunctionType($1->getType(),formals_types);
-	table.addFuncData(ScopeData($3->getName(),0,func_type));
 	endScope();
 	table.printLastScopeData();
+    table.removeScope();
+    table.addFuncData(ScopeData($3->getName(),0,func_type));
 };
 Enums : /*epsilon*/																		{};
 Enums : EnumDecl Enums																{};
@@ -243,6 +241,8 @@ Exp : LPAREN Type {
 int main()
 {
 	yyparse();
+    endScope();
+	table.printLastScopeData();
 }
 
 int yyerror(const char * message)

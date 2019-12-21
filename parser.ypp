@@ -22,9 +22,11 @@
 	int yyerror(const char * message);
     string getRetType(ScopeData some_func);
     void numCheck(TypeContainer* data);
-    string getFunctionParameters(string id);
+    string getFunctionParametersString(string id);
     vector<string> functionTypeToVector(string function_type);
     string getFunctionFullType(string id);
+    vector<string> getFunctionParameters(string id);
+    void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp);
 	Scope table;
     int while_count = 0;
     string last_function_ret_type = "VOID";
@@ -127,7 +129,8 @@ Statement : Type ID {
 Statement : EnumType ID {
     notDefined($1);
 	wasDefined($2);
-} SC														{};
+    table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));} 
+    SC	{};
 Statement : EnumDecl															{};
 Statement : Type ID {
 	wasDefined($2);
@@ -136,7 +139,8 @@ Statement : Type ID {
 	typeCheck($1,$5);
 	};
 Statement : EnumType ID {wasDefined($2);} ASSIGN Exp {  
-    typeCheck($2,$5);
+    enumtTypeCheck($1,$5);
+    table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));
     } SC {
 };
 Statement : ID { notDefined($1);} ASSIGN Exp SC {typeCheck($1,$4);};
@@ -175,24 +179,20 @@ Statement : CONTINUE SC	{
         errorUnexpectedContinue(yylineno);
     }
 };
-Call : CheckFunc LPAREN ExpList RPAREN {
-	/*
-	string& func = $1->getType();
-	int pos = func.find_first_of("->");
-	string prototypes = func.substr(0,pos);
-	string temp = makeFunctionType("void", $4->getTypes());
-	pos = temp.find_first_of("->");
-	string prototypes_two = temp.substr(0,pos);
-	if(prototypes != prototypes_two){
-		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
-	} */
+Call : CheckFunc LPAREN ExpList RPAREN  {
+	
+	vector<string> func_params = getFunctionParameters($1->getName());
+	vector<string> exp_list_params = $1->getTypes();
+	if(func_params != exp_list_params){
+		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+	} 
 };
 Call : CheckFunc LPAREN RPAREN {
     
     string func_type = getFunctionFullType($1->getName());
     vector<string> func_params = functionTypeToVector(func_type);
     
-	if(getFunctionParameters($1->getName())!="()"){
+	if(getFunctionParametersString($1->getName())!="()"){
 		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
 	} 
     
@@ -373,7 +373,7 @@ string getRetType(ScopeData some_func){
     return type;
 }
 
-string getFunctionParameters(string id){
+string getFunctionParametersString(string id){
     ScopeData func_data = table.getDataCopy(id);
     string type = func_data.getTypeCopy();
     std::size_t location = type.find("->");
@@ -400,4 +400,24 @@ vector<string> functionTypeToVector(string function_type) {
 
 string getFunctionFullType(string id){
     return table.getDataCopy(id).getTypeCopy();
+}
+
+vector<string> getFunctionParameters(string id){
+    string type = getFunctionFullType(id);
+    return functionTypeToVector(type);
+}
+
+void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp){
+    string checked_enum = enumtype->getName();
+    string exp_type = getActualType(exp);
+    std::size_t location = exp_type.find(" ");
+    if (location==std::string::npos){
+        errorMismatch(yylineno);
+        exit(0);
+    }
+    string actual_enum_id = exp_type.substr(location+1);
+    if (actual_enum_id!=checked_enum){
+        errorMismatch(yylineno);
+        exit(0);
+    }
 }

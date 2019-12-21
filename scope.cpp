@@ -50,6 +50,14 @@ void Scope::printLastScopeData() {
   }
 }
 
+void Scope::getNextOffset(){
+  int count = 0;
+  for (auto const& current_scope : symbol_table ) {
+    count += current_scope.size();
+  }
+  return count+1;
+}
+
 // ostream &operator<<(ostream &out, const Scope &scope) {
 //   int i = 0;
 //   for (auto current_scope : scope.scopes) {

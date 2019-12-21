@@ -92,8 +92,7 @@ EnumDecl : ENUM ID {
 	wasDefined($2);
 } LBRACE EnumeratorList RBRACE SC   {
     vector<string> enum_names = ((FormalListClass*)$5)->getNames();
-    string enum_str = makeEnumType(enum_names);
-    table.addScopeData(ScopeData($2->getName(),0,enum_str));
+    table.addScopeData(ScopeData($2->getName(),0,"ENUM",enum_names));
 };
 RetType : Type																				{$$=$1;};
 RetType : VOID																				{$$=$1;};

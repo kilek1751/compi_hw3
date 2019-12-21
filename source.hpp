@@ -12,18 +12,18 @@ using std::string;
 using std::vector;
 
 class TypeContainer {
- public:
-  string type;
-  TypeContainer(string some_type) : type(some_type){};
-  TypeContainer() : type("NO_TYPE"){};
-  void printData() { std::cout << type << endl; }
-  string getType() { return type; };
-  vector<string> virtual getTypes(){};
-  void virtual printContent(){};
-  int virtual getVal(){};
-  string virtual getName(){};
-  void virtual addType(string some_type){};
-  void virtual addTypes(vector<string> to_add_types){};
+    public:
+        string type;
+        TypeContainer(string some_type) : type(some_type){};
+        TypeContainer() : type("NO_TYPE"){};
+        void printData() { std::cout << type << endl; }
+        string getType() { return type; };
+        vector<string> virtual getTypes(){};
+        void virtual printContent(){};
+        int virtual getVal(){};
+        string virtual getName(){};
+        void virtual addType(string some_type){};
+        void virtual addTypes(vector<string> to_add_types){};
 };
 
 class Int : public TypeContainer {

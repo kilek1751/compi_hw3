@@ -89,8 +89,10 @@ Enumerator : ID	{
 Statements : Statement																{};
 Statements : Statements Statement											{};
 Statement : LBRACE Statements RBRACE									{};
-Statement : Type ID {wasDefined($2);} SC {
-
+Statement : Type ID {
+    wasDefined($2);
+    insertToSymbolTable($1,$2);
+    } SC {
 };
 Statement : EnumType ID {
 	wasDefined($2);
@@ -133,7 +135,9 @@ Call : CheckFunc LPAREN RPAREN {
 		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
 		} */
 };
-CheckFunc : ID {CheckDefinedFunc($1);};
+CheckFunc : ID {
+    CheckDefinedFunc($1);
+};
 ExpList : Exp																					{$$=new ExpList($1->getType());};
 ExpList : Exp COMMA ExpList														{$$=new ExpList($1->getType());$$->addTypes($3->getTypes());};
 Type : INT																						{$$=$1;};
@@ -156,7 +160,10 @@ Exp : NUM B																						{$$=new Byte($1->getVal(),"BYTE");};
 Exp : STRING																					{$$=new String(yytext,"STRING");};
 Exp : TRUE																						{$$=new Bool(true,"BOOL");};
 Exp : FALSE																						{$$=new Bool(false,"BOOL");};
-Exp : NOT Exp																					{$$=new Bool(yytext,"BOOL");}; /* should be yytext -> $2->type*/
+Exp : NOT Exp	{
+    isBool($2);
+    $$=new Bool(!(((Bool*)$2)->getValue()),"BOOL");
+};
 Exp : Exp AND Exp {
 	isBool($1);
 	isBool($2);
@@ -212,7 +219,8 @@ void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
 }
 
 void isBool(TypeContainer* con){
-		if (con->getType() == "BOOL"){
+    string type = getActualType(con);
+		if (type == "BOOL"){
             cout << "Type is bool" << endl;
 			errorMismatch(yylineno);
 			exit(0);
@@ -256,6 +264,7 @@ void insertToSymbolTable(TypeContainer* type,TypeContainer* id){
 	table.addScopeData(inserted_element);
 }
 
+/* this function returns the "returned type" of a function */
 string getActualType(TypeContainer* some_data){
     string type = some_data->getType();
     if (type=="ID"){

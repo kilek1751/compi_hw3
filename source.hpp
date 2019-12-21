@@ -66,6 +66,7 @@ class Bool : public TypeContainer {
     val = false;
   }
   Bool(bool in_val, string type) : val(in_val), TypeContainer(type){};
+  bool getValue() { return val; };
 };
 
 class Void : public TypeContainer {

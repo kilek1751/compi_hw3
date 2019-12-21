@@ -320,7 +320,6 @@ void CheckDefinedFunc(TypeContainer* con){
      }
      ScopeData copy = table.getDataCopy(con->getName());
      string type = copy.getTypeCopy();
-     cout << type << endl;
      if (type.find(arrow)==std::string::npos){
          cout << "Did not find ->" << endl;
          errorUndefFunc(yylineno,con->getName());

@@ -185,11 +185,10 @@ Call : CheckFunc LPAREN ExpList RPAREN {
 		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
 	} */
 };
-Call : CheckFunc LPAREN RPAREN {
-	/*
+Call : CheckFunc LPAREN RPAREN {/*
 	if($1->getTypes().size() != 0){
 		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
-		} */
+	} */
 };
 CheckFunc : ID {
     CheckDefinedFunc($1);
@@ -211,18 +210,18 @@ Exp : Exp BINOPL Exp {
     numCheck($3);
 	$$ = binOpType($1,$3);
 };
-Exp : ID																							{$$=new Id(yytext,"ID");};
+Exp : ID																							{$$=$1;};
 Exp : Call																						{$$=$1;};
-Exp : NUM																							{$$=new Int(yytext,"INT");};
+Exp : NUM																							{$$=$1;};
 Exp : NUM B		{
     if ($1->getVal()>255){
         errorByteTooLarge(yylineno,std::to_string($1->getVal()));
     }
     $$=new Byte($1->getVal(),"BYTE");
 };
-Exp : STRING																					{$$=new String(yytext,"STRING");};
-Exp : TRUE																						{$$=new Bool(true,"BOOL");};
-Exp : FALSE																						{$$=new Bool(false,"BOOL");};
+Exp : STRING																					{$$=$1;};
+Exp : TRUE																						{$$=$1;};
+Exp : FALSE																						{$$=$1;};
 Exp : NOT Exp {
     isBool($2);
     $$=new Bool(!(((Bool*)$2)->getValue()),"BOOL");
@@ -230,12 +229,12 @@ Exp : NOT Exp {
 Exp : Exp AND Exp {
 	isBool($1);
 	isBool($3);
-	$$=new Bool(yytext,"BOOL");
+	$$=new Bool($1->getValue() && $3->getValue(),"BOOL");
 };
 Exp : Exp OR Exp {
 	isBool($1);
 	isBool($3);
-	$$=new Bool(yytext,"BOOL");
+	$$=new Bool($1->getValue() || $3->getValue(),"BOOL");
 };
 Exp : Exp RELOP Exp  {
     numCheck($1);
@@ -366,4 +365,13 @@ string getRetType(ScopeData some_func){
     std::size_t location = type.find("->");
     type = type.substr(location+2);
     return type;
+}
+
+string getFunctionParameters(string id){
+    ScopeData func_data = table.getDataCopy(id);
+    string type = func_data.getTypeCopy();
+    std::size_t location = type.find("->");
+    type = type.substr(0,location);
+    return type;
+
 }

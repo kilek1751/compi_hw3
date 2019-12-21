@@ -21,6 +21,7 @@ class TypeContainer {
   vector<string> virtual getTypes(){};
   void virtual printContent(){};
   int virtual getVal(){};
+  bool virtual getValue(){};
   string virtual getName(){};
   void virtual addType(string some_type){};
   void virtual addTypes(vector<string> to_add_types){};

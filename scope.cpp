@@ -149,6 +149,13 @@ ScopeData Scope::getDataCopy(string id) {
       return (curr_scope.find(id))->second;
     }
   }
+  for (vector<string> curr_vec : enum_ids) {
+    for (string curr_id : curr_vec) {
+      if (curr_id == id) {
+        return ScopeData(id, 0, "ENUM");
+      }
+    }
+  }
   throw std::exception();
 }
 

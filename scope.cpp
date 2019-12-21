@@ -3,7 +3,7 @@
 #include "Scope.h"
 bool Scope::exist(string id) {
   for (auto const& current_scope : symbol_table) {
-    if(current_scope.find(id) != current_scope.end()){
+    if (current_scope.find(id) != current_scope.end()) {
       return true;
     }
   }
@@ -11,7 +11,7 @@ bool Scope::exist(string id) {
 }
 
 void Scope::insertScope() {
-  symbol_table.push_back(unordered_map<string,ScopeData>());
+  symbol_table.push_back(unordered_map<string, ScopeData>());
   // scopes.emplace_back(list<ScopeData>());
   // current_scope_level++;
 }
@@ -43,19 +43,19 @@ void Scope::printData() {
 }
 
 void Scope::printLastScopeData() {
-  unordered_map<string,ScopeData> last_scope = symbol_map.back();
+  unordered_map<string, ScopeData> last_scope = symbol_map.back();
   for (auto const& data : current_scope) {
     printID(data.second.getNameCopy(), data.second.getRelLocationCopy(),
             data.second.getTypeCopy());
   }
 }
 
-void Scope::getNextOffset(){
+int Scope::getNextOffset() {
   int count = 0;
-  for (auto const& current_scope : symbol_table ) {
+  for (auto const& current_scope : symbol_table) {
     count += current_scope.size();
   }
-  return count+1;
+  return count + 1;
 }
 
 // ostream &operator<<(ostream &out, const Scope &scope) {

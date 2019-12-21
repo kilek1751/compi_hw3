@@ -13,6 +13,11 @@
 	extern void discoveringYYSTYPE(int yy);
 	TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs);
 	void typeCheck(TypeContainer* lhs,TypeContainer* rhs);
+	void isBool(TypeContainer* con);
+	void wasDefined(TypeContainer* con);
+	void notDefined(TypeContainer* con);
+	void CheckDefinedFunc(TypeContainer* con);
+	void insertToSymbolTable(TypeContainer* type,TypeContainer* id);
 	int yyerror(const char * message);
 	Scope table;
 
@@ -89,7 +94,7 @@ Statement : Type ID {wasDefined($2);} SC {
 Statement : EnumType ID {
 	wasDefined($2);
 } SC														{};
-Statement : EnumDecl		bl															{};
+Statement : EnumDecl															{};
 Statement : Type ID {
 	wasDefined($2);
 	insertToSymbolTable($1,$2);
@@ -99,22 +104,18 @@ Statement : Type ID {
 Statement : EnumType ID {wasDefined($2);} ASSIGN Exp SC {
 
 };
-Statement : ID {
-	notDefined($2);
-	} ASSIGN Exp SC 	{
-	typeCheck($1,$4);
-};
+Statement : ID { notDefined($1);} ASSIGN Exp SC {typeCheck($1,$4);};
 Statement : Call SC																		{};
 Statement : RETURN SC																	{};
 Statement : RETURN Exp SC															{};
-Statement : IF LPAREN Exp {isBool($3);} RPAREN Statement %prec THEN	{};
-Statement : IF LPAREN Exp {isBool($3);} RPAREN Statement ELSE Statement {};
-Statement : WHILE LPAREN Exp {isBool($3);} RPAREN Statement {};
+Statement : IF LPAREN CheckType RPAREN Statement %prec THEN	{};
+Statement : IF LPAREN CheckType RPAREN Statement ELSE Statement {};
+Statement : WHILE LPAREN CheckType RPAREN Statement {};
+CheckType : Exp {isBool($1);};
 Statement : BREAK SC																	{};
 Statement : CONTINUE SC																{};
-Call : ID {
-	CheckDefinedFunc($1);
-	} LPAREN ExpList RPAREN {
+Call : CheckFunc LPAREN ExpList RPAREN {
+	/*
 	string& func = $1->getType();
 	int pos = func.find_first_of("->");
 	string prototypes = func.substr(0,pos);
@@ -122,16 +123,16 @@ Call : ID {
 	pos = temp.find_first_of("->");
 	string prototypes_two = temp.substr(0,pos);
 	if(prototypes != prototypes_two){
-		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());						#TODO getTypes returns a vector, should it ?
-	}
+		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());				
+	} */
 };
-Call : ID {
-	CheckDefinedFunc($1);
-	} LPAREN RPAREN {
+Call : CheckFunc LPAREN RPAREN {
+	/*
 	if($1->getTypes().size() != 0){
-		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes())							#TODO getTypes returns a vector, should it ?
-	}
+		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
+		} */
 };
+CheckFunc : ID {CheckDefinedFunc($1);};
 ExpList : Exp																					{$$=new ExpList($1->getType());};
 ExpList : Exp COMMA ExpList														{$$=new ExpList($1->getType());$$->addTypes($3->getTypes());};
 Type : INT																						{$$=$1;};
@@ -154,7 +155,7 @@ Exp : NUM B																						{$$=new Byte($1->getVal(),"BYTE");};
 Exp : STRING																					{$$=new String(yytext,"STRING");};
 Exp : TRUE																						{$$=new Bool(true,"BOOL");};
 Exp : FALSE																						{$$=new Bool(false,"BOOL");};
-Exp : NOT Exp																					{$$=new Bool(yytext,"BOOL");}; # should be yytext -> $2->type
+Exp : NOT Exp																					{$$=new Bool(yytext,"BOOL");}; /* should be yytext -> $2->type*/
 Exp : Exp AND Exp {
 	isBool($1);
 	isBool($2);
@@ -197,44 +198,45 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
   return new Int(lhs->getVal() + rhs->getVal(), "BYTE");
 }
 
- void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
+void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
 	 if(lhs->getType() != rhs->getType()){
-		 errorMismatch(yylineno);
-		 exit(0);
-	 }
- }
+		errorMismatch(yylineno);
+		exit(0);
+	}
+}
 
- void isBool(TypeContainer* con){
+void isBool(TypeContainer* con){
 		if (con->getType() == "BOOL"){
 			errorMismatch(yylineno);
 			exit(0);
 		}
  }
 
- void wasDefined(TypeContainer* con){
-	 if( Scope::exist( con->getName() ){
-		 errorDef(yylineno, con->getName());
-		 exit(0);
-	 }
- }
+void wasDefined(TypeContainer* con){
+	if( Scope::exist( con->getName() ){
+		errorDef(yylineno, con->getName());
+		exit(0);
+	}
+}
 
- void notDefined(TypeContainer* con){
+void notDefined(TypeContainer* con){
 	 if(Scope::exist( !con->getName() )){
-		 errorUndef(yylineno, con->getName());
-		 exit(0);
-	 }
- }
+		errorUndef(yylineno, con->getName());
+		exit(0);
+	}
+}
 
- void CheckDefinedFunc(TypeContainer* con){
+void CheckDefinedFunc(TypeContainer* con){
 	 string arrow = "->";
 	 if( !Scope::exist( con->getName()) ||
 	 			con->getType().find(arrow) == std::string::npos ){
 		 errorUndefFunc(yylineno, con->getName());
 		 exit(0);
 	 }
- }
+}
 
 void insertToSymbolTable(TypeContainer* type,TypeContainer* id){
 	return;
-	//ScopeData inserted_element = ScopeData(id->getName(),table.nextOffset(),type->getType());
+	// ScopeData inserted_element = ScopeData(id->getName(),table.nextOffset(),type->getType());
+	// table.addScopeData(inserted_element);
 }

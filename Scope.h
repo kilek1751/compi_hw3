@@ -17,7 +17,7 @@ using std::pair;
 using std::unordered_map;
 
 class Scope {
-  vector<unordered_map<string,ScopeData>> symbol_table;
+  vector<unordered_map<string, ScopeData>> symbol_table;
   // list<list<ScopeData>> scopes;
   // unordered_map<string, pair<ScopeData, int>> Symbol_map;
   // int current_scope_level = 0;
@@ -29,7 +29,7 @@ class Scope {
   void addScopeData(ScopeData scope_data);
   void printLastScopeData();
   void printData();
-  void Scope::getNextOffset();
+  int Scope::getNextOffset();
   friend ostream& operator<<(ostream& out, const Scope& scope);
   // void discoveringYYSTYPE(int yy);
 };

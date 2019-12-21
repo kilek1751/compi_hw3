@@ -18,21 +18,22 @@ using std::stack;
 using std::unordered_map;
 
 class Scope {
-    vector<unordered_map<string, ScopeData>> symbol_table;
-    vector<vector<string>> insertion_order;
-    stack<int> offsetStack;
+  vector<unordered_map<string, ScopeData>> symbol_table;
+  vector<vector<string>> insertion_order;
+  stack<int> offsetStack;
+  vector<vector<string>> enum_ids;
 
  public:
-    bool exist(string id);
-    void insertScope();
-    ScopeData getDataCopy(string id);
-    void removeScope();
-    void addScopeData(ScopeData scope_data);
-    void addFuncData(ScopeData scope_data);
-    void printLastScopeData();
-    void printData();
-    int getNextOffset();
-    // void discoveringYYSTYPE(int yy);
+  bool exist(string id);
+  void insertScope();
+  ScopeData getDataCopy(string id);
+  void removeScope();
+  void addScopeData(ScopeData scope_data);
+  void addFuncData(ScopeData scope_data);
+  void printLastScopeData();
+  void printData();
+  int getNextOffset();
+  // void discoveringYYSTYPE(int yy);
 };
 
 #endif  // COMPE3_SCOPE_H

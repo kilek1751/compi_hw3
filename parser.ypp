@@ -291,8 +291,6 @@ void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
     string rhs_type = getActualType(rhs);
     
 	 if(lhs_type != rhs_type){
-        cout << "lhs type : " << lhs_type << ", rhs type : " << rhs_type << endl;
-        cout << "operands do not match" << endl;
 		errorMismatch(yylineno);
 		exit(0);
 	}
@@ -301,7 +299,6 @@ void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
 void isBool(TypeContainer* con){
     string type = getActualType(con);
 		if (type == "BOOL"){
-            cout << "Type is bool" << endl;
 			errorMismatch(yylineno);
 			exit(0);
 		}
@@ -325,14 +322,12 @@ void CheckDefinedFunc(TypeContainer* con){
 	 string arrow = "->";
      bool id_exists = table.exist(con->getName());
      if (!id_exists){
-         cout << "Did not find id" << endl;
          errorUndefFunc(yylineno,con->getName());
          exit(0);
      }
      ScopeData copy = table.getDataCopy(con->getName());
      string type = copy.getTypeCopy();
      if (type.find(arrow)==std::string::npos){
-         cout << "Did not find ->" << endl;
          errorUndefFunc(yylineno,con->getName());
          exit(0);
      }

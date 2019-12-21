@@ -2,6 +2,7 @@
 
 #include "Scope.h"
 #include <stdexcept>
+#include <algorithm>
 bool Scope::exist(string id) {
     for (auto const& current_scope : symbol_table) {
         if (current_scope.find(id) != current_scope.end()) {

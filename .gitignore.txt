@@ -6,5 +6,6 @@ Makefile
 t*.*
 *.out
 output.hpp.gch
+tests/
 tests
 run_tests

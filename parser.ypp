@@ -53,8 +53,8 @@ Program	: {
 	printi_func_args.push_back("INT");
 	string print_func_type = makeFunctionType("VOID",print_func_args);
 	string printi_func_type = makeFunctionType("VOID",printi_func_args);
-	table.addScopeData(ScopeData("print",0,print_func_type));
-	table.addScopeData(ScopeData("printi",0,printi_func_type));
+	table.addFuncData(ScopeData("print",0,print_func_type));
+	table.addFuncData(ScopeData("printi",0,printi_func_type));
 	endScope();
 	table.printLastScopeData();
 }
@@ -64,7 +64,7 @@ Funcs : FuncDecl Funcs 																								{};
 FuncDecl : RetType ID {wasDefined($2);} LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} {
  	vector<string> formals_types = $5->getTypes();
 	string func_type = makeFunctionType($1->getType(),formals_types);
-	table.addScopeData(ScopeData($2->getName(),0,func_type));
+	table.addFuncData(ScopeData($2->getName(),0,func_type));
 	endScope();
 	table.printLastScopeData();
 };

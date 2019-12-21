@@ -59,7 +59,7 @@ Program	: {
 	Enums Funcs 																								{};
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
-FuncDecl : RetType ID {wasDefined($2)} LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} { 
+FuncDecl : RetType ID {wasDefined($2);} LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} { 
  	vector<string> formals_types = $5->getTypes();	
 	string func_type = makeFunctionType($1->getType(),formals_types);
 	table.addScopeData(ScopeData($2->getName(),0,func_type));
@@ -78,9 +78,9 @@ Formals : FormalsList																	{$$=$1;};
 FormalsList : FormalDecl															{$$=$1;};
 FormalsList : FormalDecl COMMA FormalsList						{((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
 FormalDecl : Type ID																	{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
-FormalDecl : EnumType ID															{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
-EnumeratorList : Enumerator														{$$=new FormalListClass(*$1);};
-EnumeratorList : EnumeratorList COMMA Enumerator			{$3->addIds($1->getIds());$$=$3;};
+FormalDecl : EnumType ID															{/*$$=new FormalListClass(Id($2->getName(),$1->getType()));*/};
+EnumeratorList : Enumerator														{/*$$=new FormalListClass($1->getName(),$1->getType());*/};
+EnumeratorList : EnumeratorList COMMA Enumerator			{/*((FormalListClass*)$3)->addIds(((FormalListClass*)$1)->getIds());$$=$3;*/};
 Enumerator : ID	{
 	wasDefined($1);
 	$$=$1;

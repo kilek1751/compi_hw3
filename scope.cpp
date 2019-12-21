@@ -56,7 +56,7 @@ void Scope::printData() {
   int i = (int)insertion_order.size() - 1;
   if (i < 0) return;
   for (vector<vector<string>>::reverse_iterator l_scope =
-           insertion_order.rbegin();
+       insertion_order.rbegin();
        l_scope != insertion_order.rend(); l_scope++) {
     vector<string>& curr = *l_scope;
     vector<ScopeData> enums_to_print;
@@ -139,6 +139,15 @@ void Scope::printLastScopeData() {
   //        std::reverse(temp.begin(), temp.end());
   //        printEnumType(enum_to_print.getNameCopy(), temp);
   //    }
+}
+
+void Scope::printTable(){
+  for (auto scope : symbol_table) {
+    for (auto symbol : scope){
+      std::cout << "name is - " << symbol.first << " is " << symbol.second.getNameCopy();
+      std::cout << " and the type is - " << symbol.second.getTypeCopy() << std::endl;
+    }
+  }
 }
 
 int Scope::getNextOffset() { return offsetStack.top(); }

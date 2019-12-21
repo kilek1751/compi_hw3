@@ -33,6 +33,7 @@ class Scope {
   void printLastScopeData();
   void printData();
   int getNextOffset();
+  void printTable();
   // void discoveringYYSTYPE(int yy);
 };
 

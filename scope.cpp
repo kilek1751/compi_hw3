@@ -43,7 +43,7 @@ void Scope::printData() {
 }
 
 void Scope::printLastScopeData() {
-    unordered_map<string, ScopeData> last_scope = symbol_table.back();
+  unordered_map<string, ScopeData> last_scope = symbol_table.back();
   for (auto const& data : last_scope) {
     printID(data.second.getNameCopy(), data.second.getRelLocationCopy(),
             data.second.getTypeCopy());
@@ -69,5 +69,13 @@ int Scope::getNextOffset() {
 //   }
 //   return out;
 // }
+
+ScopeData Scope::getDataCopy(string id) {
+  for (unordered_map<string, ScopeData> curr_scope : symbol_table) {
+    if (curr_scope.find(id) != curr_scope.end()) {
+      return (curr_scope.find(id))->second;
+    }
+  }
+}
 
 void discoveringYYSTYPE(int yy) { cout << "YYstype is : " << yy << endl; }

@@ -18,6 +18,7 @@
 	void notDefined(TypeContainer* con);
 	void CheckDefinedFunc(TypeContainer* con);
 	void insertToSymbolTable(TypeContainer* type,TypeContainer* id);
+    string getActualType(TypeContainer* some_data);
 	int yyerror(const char * message);
 	Scope table;
 
@@ -49,8 +50,8 @@ Program	: {
 	vector<string> printi_func_args;
 	print_func_args.push_back("STRING");
 	printi_func_args.push_back("INT");
-	string print_func_type = makeFunctionType("void",print_func_args);
-	string printi_func_type = makeFunctionType("void",printi_func_args);
+	string print_func_type = makeFunctionType("VOID",print_func_args);
+	string printi_func_type = makeFunctionType("VOID",printi_func_args);
 	table.addScopeData(ScopeData("print",0,print_func_type));
 	table.addScopeData(ScopeData("printi",0,printi_func_type));
 	endScope();
@@ -199,7 +200,12 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 }
 
 void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
-	 if(lhs->getType() != rhs->getType()){
+    string lhs_type = getActualType(lhs);
+    string rhs_type = getActualType(rhs);
+    
+	 if(lhs_type != rhs_type){
+        cout << "lhs type : " << lhs_type << ", rhs type : " << rhs_type << endl;
+        cout << "operands do not match" << endl;
 		errorMismatch(yylineno);
 		exit(0);
 	}
@@ -207,6 +213,7 @@ void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
 
 void isBool(TypeContainer* con){
 		if (con->getType() == "BOOL"){
+            cout << "Type is bool" << endl;
 			errorMismatch(yylineno);
 			exit(0);
 		}
@@ -228,14 +235,36 @@ void notDefined(TypeContainer* con){
 
 void CheckDefinedFunc(TypeContainer* con){
 	 string arrow = "->";
-	 if( !table.exist( con->getName()) ||
-	 			con->getType().find(arrow) == std::string::npos ){
-		 errorUndefFunc(yylineno, con->getName());
-		 exit(0);
-	 }
+     bool id_exists = table.exist(con->getName());
+     if (!id_exists){
+         cout << "Did not find id" << endl;
+         errorUndefFunc(yylineno,con->getName());
+         exit(0);
+     }
+     ScopeData copy = table.getDataCopy(con->getName());
+     string type = copy.getTypeCopy();
+     cout << type << endl;
+     if (type.find(arrow)==std::string::npos){
+         cout << "Did not find ->" << endl;
+         errorUndefFunc(yylineno,con->getName());
+         exit(0);
+     }
 }
 
 void insertToSymbolTable(TypeContainer* type,TypeContainer* id){
 	ScopeData inserted_element = ScopeData(id->getName(),table.getNextOffset(),type->getType());
 	table.addScopeData(inserted_element);
+}
+
+string getActualType(TypeContainer* some_data){
+    string type = some_data->getType();
+    if (type=="ID"){
+        type = table.getDataCopy(some_data->getName()).getTypeCopy();
+        std::size_t location = type.find("->");
+        if (location == std::string::npos){
+            return type;
+        }
+        type = type.substr(location+2);
+    }
+    return type;
 }

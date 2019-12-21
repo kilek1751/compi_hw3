@@ -25,6 +25,7 @@ class Scope {
  public:
   bool exist(string id);
   void insertScope();
+  ScopeData getDataCopy(string id);
   void removeScope();
   void addScopeData(ScopeData scope_data);
   void printLastScopeData();

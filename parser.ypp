@@ -59,8 +59,8 @@ Program	: {
 	Enums Funcs 																								{};
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
-FuncDecl : RetType ID {wasDefined($2);} LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} { 
- 	vector<string> formals_types = $5->getTypes();	
+FuncDecl : RetType ID {wasDefined($2);} LPAREN Formals RPAREN LBRACE {/*startscope*/} Statements RBRACE {/*endscope*/} {
+ 	vector<string> formals_types = $5->getTypes();
 	string func_type = makeFunctionType($1->getType(),formals_types);
 	table.addScopeData(ScopeData($2->getName(),0,func_type));
 	endScope();
@@ -110,7 +110,7 @@ Statement : RETURN SC																	{};
 Statement : RETURN Exp SC															{};
 Statement : IF LPAREN CheckType RPAREN Statement %prec THEN	{};
 Statement : IF LPAREN CheckType RPAREN Statement ELSE Statement {};
-Statement : WHILE LPAREN CheckType RPAREN Statement {};
+Statement : WHILE LPAREN CheckType RPAREN Statement 	{};
 CheckType : Exp {isBool($1);};
 Statement : BREAK SC																	{};
 Statement : CONTINUE SC																{};
@@ -123,7 +123,7 @@ Call : CheckFunc LPAREN ExpList RPAREN {
 	pos = temp.find_first_of("->");
 	string prototypes_two = temp.substr(0,pos);
 	if(prototypes != prototypes_two){
-		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());				
+		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
 	} */
 };
 Call : CheckFunc LPAREN RPAREN {
@@ -236,7 +236,6 @@ void CheckDefinedFunc(TypeContainer* con){
 }
 
 void insertToSymbolTable(TypeContainer* type,TypeContainer* id){
-	return;
-	// ScopeData inserted_element = ScopeData(id->getName(),table.nextOffset(),type->getType());
-	// table.addScopeData(inserted_element);
+	ScopeData inserted_element = ScopeData(id->getName(),table.getNextOffset(),type->getType());
+	table.addScopeData(inserted_element);
 }

@@ -1,6 +1,7 @@
 
 
 #include "Scope.h"
+#include <stdexcept>
 bool Scope::exist(string id) {
   for (auto const& current_scope : symbol_table) {
     if (current_scope.find(id) != current_scope.end()) {
@@ -11,26 +12,23 @@ bool Scope::exist(string id) {
 }
 
 void Scope::insertScope() {
-  symbol_table.push_back(unordered_map<string, ScopeData>());
-  // scopes.emplace_back(list<ScopeData>());
-  // current_scope_level++;
+    offsetStack.push(offsetStack.top());
+    symbol_table.push_back(unordered_map<string, ScopeData>());
 }
 
 void Scope::removeScope() {
-  symbol_table.pop_back();
-  // scopes.pop_back();
-  // current_scope_level--;
+    offsetStack.pop();
+    symbol_table.pop_back();
 }
 
 void Scope::addScopeData(ScopeData scope_data) {
-  (symbol_table.back())[scope_data.getNameCopy()] = scope_data;
-  // if (symbol_map.find(scope_data.getNameCopy()) != symbol_map.end()) {
-  //   cout << "Error already inside symbol table" << endl;
-  //   return;
-  // }
-  // scopes.back().emplace_back(ScopeData(scope_data));
-  // symbol_map[scope_data.getNameCopy()] =
-  //     make_pair(scope_data, current_scope_level);
+    (symbol_table.back())[scope_data.getNameCopy()] = scope_data;
+    offsetStack.top()++;
+}
+
+
+void Scope::addFuncData(ScopeData scope_data) {
+    (symbol_table.back())[scope_data.getNameCopy()] = scope_data;
 }
 
 void Scope::printData() {
@@ -51,24 +49,8 @@ void Scope::printLastScopeData() {
 }
 
 int Scope::getNextOffset() {
-  int count = 0;
-  for (auto const& current_scope : symbol_table) {
-    count += current_scope.size();
-  }
-  return count + 1;
+    return offsetStack.top();
 }
-
-// ostream &operator<<(ostream &out, const Scope &scope) {
-//   int i = 0;
-//   for (auto current_scope : scope.scopes) {
-//     out << "Scope number: " << i << endl;
-//     for (auto data : current_scope) {
-//       out << data << endl;
-//     }
-//     i++;
-//   }
-//   return out;
-// }
 
 ScopeData Scope::getDataCopy(string id) {
   for (unordered_map<string, ScopeData> curr_scope : symbol_table) {
@@ -76,6 +58,7 @@ ScopeData Scope::getDataCopy(string id) {
       return (curr_scope.find(id))->second;
     }
   }
+    throw std::exception();
 }
 
 void discoveringYYSTYPE(int yy) { cout << "YYstype is : " << yy << endl; }

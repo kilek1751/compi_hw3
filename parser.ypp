@@ -30,6 +30,8 @@
   vector<string> getFunctionParameters(string id);
   void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp);
   vector<ScopeData> createFuncArgsVec(TypeContainer* formals);
+  string getRetType(string type);
+  string getFunctionRetTypeString(string id);
   Scope table;
   int while_count = 0;
   string last_function_ret_type = "VOID";
@@ -173,8 +175,12 @@ Statement : WHILE LPAREN CheckType RPAREN {
         table.printLastScopeData();
         table.removeScope();
 };
-InsertScope : {table.insertScope();}
-RemoveScope : {table.removeScope();}
+InsertScope : {
+  table.insertScope();}
+RemoveScope : {
+  endScope();
+  table.removeScope();
+}
 CheckType : Exp {isBool($1);};
 Statement : BREAK SC  {
     if (while_count==0){
@@ -190,6 +196,11 @@ Call : CheckFunc LPAREN ExpList RPAREN  {
 	string func_params_string = getFunctionParametersString($1->getName()); // (type1,type2,type3..)
   vector<string> func_def_params = parseFuncParams(func_params_string);
   vector<string> explist_params = $3->getTypes(); // returns the typelist
+  /* debug */
+  //for(auto a : explist_params){
+  //  std::cout << a << endl;
+  //}
+  /* end debug */
   if(func_def_params.size() != explist_params.size()){
     vector<string> func_params = parseFuncParams(func_params_string);
     errorPrototypeMismatch(yylineno, $1->getName(), func_params);
@@ -208,6 +219,7 @@ Call : CheckFunc LPAREN ExpList RPAREN  {
       }
     }
   }
+  //std::cout << "--" << getFunctionRetTypeString($1->getName()) << "--" << std::endl;
 };
 Call : CheckFunc LPAREN RPAREN {
   string func_params_string = getFunctionParametersString($1->getName());
@@ -395,12 +407,17 @@ string getRetType(ScopeData some_func){
 
 /* gets function name and returns the type (type1,type2,type3) */
 string getFunctionParametersString(string id){
-  vector<string> params;
   ScopeData func_data = table.getDataCopy(id);
   string type = func_data.getTypeCopy();
   std::size_t location = type.find("->");
   type = type.substr(0,location);
   return type;
+}
+
+string getFunctionRetTypeString(string id){
+  ScopeData func_data = table.getDataCopy(id);
+  string RetType = func_data.getTypeCopy();
+  return getRetType(RetType);
 }
 
 
@@ -480,4 +497,12 @@ string StringFromVec(vector<string> params){
     temp += param + ',';
   }
   return temp.substr(0,temp.size()-1)+')';
+}
+
+string getRetType(string type){
+  int pos = (int)type.find("->");
+  if(pos == std::string::npos){
+    return "";
+  }
+  return type.substr(pos+2,type.size()-2);
 }

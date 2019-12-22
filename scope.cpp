@@ -47,6 +47,7 @@ void Scope::addScopeData(ScopeData scope_data) {
   for (string enum_id : enum_values) {
     enum_ids.back().push_back(enum_id);
   }
+  printTable();
 }
 
 void Scope::addFuncData(ScopeData scope_data) {

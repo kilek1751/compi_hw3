@@ -141,6 +141,8 @@ Statement : Type ID {
 	wasDefined($2);
 	insertToSymbolTable($1,$2);
 	} ASSIGN Exp SC	{
+    std::cout <<  " we are checking the type Check( of type ) " << std::endl;
+    std::cout <<  "  " << $1->getType()<< "  " << std::endl;
 	typeCheck($1,$5);
 	};
 Statement : EnumType ID {wasDefined($2);} ASSIGN Exp {  
@@ -298,6 +300,8 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 }
 
 void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
+  std::cout <<  " we are checking the LHS type ( of type ) " << std::endl;
+  std::cout <<  "  " << lhs->getType()<< "  " << std::endl;
     string lhs_type = getActualType(lhs);
     string rhs_type = getActualType(rhs);
 	 if(lhs_type != rhs_type){

@@ -166,6 +166,7 @@ ScopeData Scope::getDataCopy(string id) {
       }
     }
   }
+  printTable();
   throw std::exception();
 }
 

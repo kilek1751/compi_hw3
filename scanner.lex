@@ -22,8 +22,8 @@
 
 void                            {yylval=new Void("VOID");return VOID;};
 int                             {yylval=new Int(yytext,"INT");return INT;};
-byte                            return BYTE;
-b                               {yylval=new Byte(yytext,"B");return B;};
+byte                            {yylval=new Byte(yytext,"BYTE");return BYTE;};
+b                               {yylval=new Byte(yytext,"BYTE");return B;};
 bool                            {yylval=new Bool(yytext,"BOOL");return BOOL;};
 enum                            {yylval=new Enum(yytext,"ENUM");return ENUM;};
 and                             return AND;

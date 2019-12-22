@@ -22,6 +22,12 @@
 	int yyerror(const char * message);
     string getRetType(ScopeData some_func);
     void numCheck(TypeContainer* data);
+    string getFunctionParametersString(string id);
+    vector<string> functionTypeToVector(string function_type);
+    string getFunctionFullType(string id);
+    vector<string> getFunctionParameters(string id);
+    void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp);
+    vector<ScopeData> createFuncArgsVec(TypeContainer* formals);
 	Scope table;
     int while_count = 0;
     string last_function_ret_type = "VOID";
@@ -47,7 +53,6 @@
 
 
 %%
-
 Program	: {
 	table.insertScope();
 	vector<string> print_func_args;
@@ -58,7 +63,7 @@ Program	: {
 	string printi_func_type = makeFunctionType("VOID",printi_func_args);
 	table.addFuncData(ScopeData("print",0,print_func_type));
 	table.addFuncData(ScopeData("printi",0,printi_func_type));
-}
+    }
 	Enums Funcs {
         if (!is_main_defined){
             errorMainMissing();
@@ -69,7 +74,7 @@ Program	: {
             errorMainMissing();
             exit(0);
         }
-    }																								{};
+    }				{};
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
 FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
@@ -77,7 +82,11 @@ FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
     if ($3->getName()=="main"){
         is_main_defined=true;
     }
-    } LPAREN Formals RPAREN LBRACE {table.insertScope();} Statements RBRACE  {
+    } LPAREN Formals RPAREN LBRACE {
+        table.insertScope();
+        vector<ScopeData> created_args = createFuncArgsVec($6);
+        table.insertFuncArgs(created_args);
+    } Statements RBRACE  {
  	vector<string> formals_types = $6->getTypes();
 	string func_type = makeFunctionType($1->getType(),formals_types);
 	endScope();
@@ -125,7 +134,8 @@ Statement : Type ID {
 Statement : EnumType ID {
     notDefined($1);
 	wasDefined($2);
-} SC														{};
+    table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));} 
+    SC	{};
 Statement : EnumDecl															{};
 Statement : Type ID {
 	wasDefined($2);
@@ -134,7 +144,8 @@ Statement : Type ID {
 	typeCheck($1,$5);
 	};
 Statement : EnumType ID {wasDefined($2);} ASSIGN Exp {  
-    typeCheck($2,$5);
+    enumtTypeCheck($1,$5);
+    table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));
     } SC {
 };
 Statement : ID { notDefined($1);} ASSIGN Exp SC {typeCheck($1,$4);};
@@ -173,22 +184,23 @@ Statement : CONTINUE SC	{
         errorUnexpectedContinue(yylineno);
     }
 };
-Call : CheckFunc LPAREN ExpList RPAREN {
-	/*
-	string& func = $1->getType();
-	int pos = func.find_first_of("->");
-	string prototypes = func.substr(0,pos);
-	string temp = makeFunctionType("void", $4->getTypes());
-	pos = temp.find_first_of("->");
-	string prototypes_two = temp.substr(0,pos);
-	if(prototypes != prototypes_two){
-		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
-	} */
+Call : CheckFunc LPAREN ExpList RPAREN  {
+	
+	vector<string> func_params = getFunctionParameters($1->getName());
+	vector<string> exp_list_params = $1->getTypes();
+	if(func_params != exp_list_params){
+		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+	} 
 };
-Call : CheckFunc LPAREN RPAREN {/*
-	if($1->getTypes().size() != 0){
-		errorPrototypeMismatch(yylineno, $1->getName(), $1->getTypes());
-	} */
+Call : CheckFunc LPAREN RPAREN {
+    
+    string func_type = getFunctionFullType($1->getName());
+    vector<string> func_params = functionTypeToVector(func_type);
+    
+	if(getFunctionParametersString($1->getName())!="()"){
+		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+	} 
+    
 };
 CheckFunc : ID {
     CheckDefinedFunc($1);
@@ -240,13 +252,13 @@ Exp : Exp RELOP Exp  {
     numCheck($1);
     numCheck($3);
 	typeCheck($1,$3);
-	$$=new Bool(yytext,"BOOL");
+	$$=new Bool(true,"BOOL");
 };
 Exp : Exp RELEQ Exp{
     numCheck($1);
     numCheck($3);
 	typeCheck($1,$3);
-	$$=new Bool(yytext,"BOOL");
+	$$=new Bool(false,"BOOL");
 };
 Exp : LPAREN Type {
     if($2->getType()!="INT"){
@@ -288,7 +300,6 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
     string lhs_type = getActualType(lhs);
     string rhs_type = getActualType(rhs);
-    
 	 if(lhs_type != rhs_type){
 		errorMismatch(yylineno);
 		exit(0);
@@ -367,11 +378,63 @@ string getRetType(ScopeData some_func){
     return type;
 }
 
-string getFunctionParameters(string id){
+string getFunctionParametersString(string id){
     ScopeData func_data = table.getDataCopy(id);
     string type = func_data.getTypeCopy();
     std::size_t location = type.find("->");
     type = type.substr(0,location);
     return type;
+}
 
+
+vector<string> functionTypeToVector(string function_type) {
+  function_type = function_type.substr(0, function_type.find("->"));
+  function_type = function_type.substr(1, function_type.length() - 1);
+  std::string s = function_type;
+  std::string delimiter = ",";
+  vector<string> output_vector;
+  size_t pos = 0;
+  std::string token;
+  while ((pos = s.find(delimiter)) != std::string::npos) {
+    token = s.substr(0, pos);
+    output_vector.push_back(token);
+    s.erase(0, pos + delimiter.length());
+  }
+  return output_vector;
+}
+
+string getFunctionFullType(string id){
+    return table.getDataCopy(id).getTypeCopy();
+}
+
+vector<string> getFunctionParameters(string id){
+    string type = getFunctionFullType(id);
+    return functionTypeToVector(type);
+}
+
+void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp){
+    string checked_enum = enumtype->getName();
+    string exp_type = getActualType(exp);
+    std::size_t location = exp_type.find(" ");
+    if (location==std::string::npos){
+        errorMismatch(yylineno);
+        exit(0);
+    }
+    string actual_enum_id = exp_type.substr(location+1);
+    if (actual_enum_id!=checked_enum){
+        errorMismatch(yylineno);
+        exit(0);
+    }
+}
+
+
+vector<ScopeData> createFuncArgsVec(TypeContainer* formals){
+    vector<Id> id_vec = ((FormalListClass*)formals)->getIds();
+    vector<ScopeData> output_vec;
+    int i=-1;
+    for (Id id : id_vec){
+        output_vec.push_back(ScopeData(id.getName(),i,id.getType()));
+        i--;
+    }
+    return output_vec;
 }

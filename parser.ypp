@@ -187,21 +187,39 @@ Statement : CONTINUE SC	{
     }
 };
 Call : CheckFunc LPAREN ExpList RPAREN  {
-	string func_params_string = getFunctionParametersString($1->getName());
-  vector<string> temp = $3->getTypes();
-	string exp_params_string = StringFromVec(temp);
-	if(func_params_string != exp_params_string){
+	string func_params_string = getFunctionParametersString($1->getName()); // (type1,type2,type3..)
+  vector<string> func_def_params = parseFuncParams(func_params_string);
+  vector<string> explist_params = $3->getTypes(); // returns the typelist
+  if(func_def_params.size() != explist_params.size()){
     vector<string> func_params = parseFuncParams(func_params_string);
-		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
-	}
+    errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+    exit(0);
+  }
+  else {
+  for(int i = 0; i < func_def_params.size(); ++i){
+    if(func_def_params[i] == explist_params[i] ||
+      (func_def_params[i] == "INT" && explist_params[i] == "BYTE")){
+        /* all good do nothing */
+    }
+    else {
+      vector<string> func_params = parseFuncParams(func_params_string);
+      errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+      exit(0);
+    }
+  }
+	//string exp_params_string = StringFromVec(explist_params);
+	//if(func_params_string != exp_params_string){
+  //  vector<string> func_params = parseFuncParams(func_params_string);
+	//	errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+	//}
+  }
 };
 Call : CheckFunc LPAREN RPAREN {
   string func_params_string = getFunctionParametersString($1->getName());
 	if( func_params_string != "()"){
     vector<string> func_params = parseFuncParams(func_params_string);
     errorPrototypeMismatch(yylineno, $1->getName(), func_params);
-	} 
-    
+	}
 };
 CheckFunc : ID {
     CheckDefinedFunc($1);
@@ -301,9 +319,10 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
     string lhs_type = getActualType(lhs);
     string rhs_type = getActualType(rhs);
-	 if(lhs_type != rhs_type){
-		errorMismatch(yylineno);
-		exit(0);
+    if(lhs_type == "INT" && rhs_type =="BYTE") return;
+    if(lhs_type != rhs_type){
+      errorMismatch(yylineno);
+      exit(0);
 	}
 }
 
@@ -379,6 +398,7 @@ string getRetType(ScopeData some_func){
     return type;
 }
 
+/* gets function name and returns the type (type1,type2,type3) */
 string getFunctionParametersString(string id){
   vector<string> params;
   ScopeData func_data = table.getDataCopy(id);
@@ -441,12 +461,11 @@ vector<ScopeData> createFuncArgsVec(TypeContainer* formals){
     return output_vec;
 }
 
-vector<string> parseFuncParams(string id){
+vector<string> parseFuncParams(string type){
   vector<string> params;
-  ScopeData func_data = table.getDataCopy(id);
-  string type = func_data.getTypeCopy();
-  std::size_t location = type.find("->");
-  string param_string = type.substr(1,location-2);
+  //ScopeData func_data = table.getDataCopy(id);
+  //string type = func_data.getTypeCopy();
+  string param_string = type.substr(1,type.size()-2);
   int param_num = (int)std::count(param_string.begin(), param_string.end(), ',');
   int pos = 0;
   for(int i = 0; i < param_num; i++){
@@ -455,6 +474,9 @@ vector<string> parseFuncParams(string id){
     param_string = param_string.substr(pos);
   }
   params.push_back(param_string);
+  //for(auto st : params){
+  //  std::cout << st << "  " << std::endl;
+  //}
   return params;
 }
 

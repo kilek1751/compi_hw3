@@ -113,8 +113,7 @@ void Scope::printLastScopeData() {
 void Scope::printTable() {
   for (auto scope : symbol_table) {
     for (auto symbol : scope) {
-      std::cout << "name is - " << symbol.first << " is "
-                << symbol.second.getNameCopy();
+      std::cout << "name is - " << symbol.first;
       std::cout << " and the type is - " << symbol.second.getTypeCopy()
                 << std::endl;
     }

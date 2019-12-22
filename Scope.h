@@ -22,7 +22,7 @@ class Scope {
   vector<vector<string>> insertion_order;
   stack<int> offsetStack;
   vector<vector<string>> enum_ids;
-  vector<vector<ScopeData>> func_args_vec;
+  vector<vector<string>> func_args_vec;
 
  public:
   bool exist(string id);

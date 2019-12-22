@@ -7,31 +7,33 @@
 
 	using namespace output;
 
-	int yylex();
-	extern int yylineno;
-	extern char* yytext;
-	extern void discoveringYYSTYPE(int yy);
-	TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs);
-	void typeCheck(TypeContainer* lhs,TypeContainer* rhs);
-	void isBool(TypeContainer* con);
-	void wasDefined(TypeContainer* con);
-	void notDefined(TypeContainer* con);
-	void CheckDefinedFunc(TypeContainer* con);
-	void insertToSymbolTable(TypeContainer* type,TypeContainer* id);
-    string getActualType(TypeContainer* some_data);
-	int yyerror(const char * message);
-    string getRetType(ScopeData some_func);
-    void numCheck(TypeContainer* data);
-    string getFunctionParametersString(string id);
-    vector<string> functionTypeToVector(string function_type);
-    string getFunctionFullType(string id);
-    vector<string> getFunctionParameters(string id);
-    void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp);
-    vector<ScopeData> createFuncArgsVec(TypeContainer* formals);
-	Scope table;
-    int while_count = 0;
-    string last_function_ret_type = "VOID";
-    bool is_main_defined = false;
+  int yylex();
+  extern int yylineno;
+  extern char* yytext;
+  extern void discoveringYYSTYPE(int yy);
+  TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs);
+  void typeCheck(TypeContainer* lhs,TypeContainer* rhs);
+  void isBool(TypeContainer* con);
+  void wasDefined(TypeContainer* con);
+  void notDefined(TypeContainer* con);
+  void CheckDefinedFunc(TypeContainer* con);
+  void insertToSymbolTable(TypeContainer* type,TypeContainer* id);
+  string getActualType(TypeContainer* some_data);
+  int yyerror(const char * message);
+  string getRetType(ScopeData some_func);
+  void numCheck(TypeContainer* data);
+  string getFunctionParametersString(string id);
+  vector<string> parseFuncParams(string id);
+  string StringFromVec(vector<string> params);
+  vector<string> functionTypeToVector(string function_type);
+  string getFunctionFullType(string id);
+  vector<string> getFunctionParameters(string id);
+  void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp);
+  vector<ScopeData> createFuncArgsVec(TypeContainer* formals);
+  Scope table;
+  int while_count = 0;
+  string last_function_ret_type = "VOID";
+  bool is_main_defined = false;
 
 %}
 
@@ -63,7 +65,7 @@ Program	: {
 	string printi_func_type = makeFunctionType("VOID",printi_func_args);
 	table.addFuncData(ScopeData("print",0,print_func_type));
 	table.addFuncData(ScopeData("printi",0,printi_func_type));
-    }
+  }
 	Enums Funcs {
         if (!is_main_defined){
             errorMainMissing();
@@ -87,10 +89,10 @@ FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
         vector<ScopeData> created_args = createFuncArgsVec($6);
         table.insertFuncArgs(created_args);
     } Statements RBRACE  {
- 	vector<string> formals_types = $6->getTypes();
-	string func_type = makeFunctionType($1->getType(),formals_types);
-	endScope();
-	table.printLastScopeData();
+    vector<string> formals_types = $6->getTypes();
+    string func_type = makeFunctionType($1->getType(),formals_types);
+    endScope();
+    table.printLastScopeData();
     table.removeScope();
     table.addFuncData(ScopeData($3->getName(),0,func_type));
 };
@@ -140,9 +142,7 @@ Statement : EnumDecl															{};
 Statement : Type ID {
 	wasDefined($2);
 	insertToSymbolTable($1,$2);
-	} ASSIGN Exp SC	{
-    std::cout <<  " we are checking the type Check( of type ) " << std::endl;
-    std::cout <<  "  " << $1->getType()<< "  " << std::endl;
+} ASSIGN Exp SC	{
 	typeCheck($1,$5);
 	};
 Statement : EnumType ID {wasDefined($2);} ASSIGN Exp {  
@@ -158,7 +158,7 @@ Statement : RETURN SC 	{
     }
 };
 Statement : RETURN Exp {
-    if (getActualType($2)!=last_function_ret_type){
+    if (getActualType($2) != last_function_ret_type){
         errorMismatch(yylineno);
     }
 } SC	
@@ -187,20 +187,19 @@ Statement : CONTINUE SC	{
     }
 };
 Call : CheckFunc LPAREN ExpList RPAREN  {
-	
-	vector<string> func_params = getFunctionParameters($1->getName());
-	vector<string> exp_list_params = $1->getTypes();
-	if(func_params != exp_list_params){
+	string func_params_string = getFunctionParametersString($1->getName());
+  vector<string> temp = $3->getTypes();
+	string exp_params_string = StringFromVec(temp);
+	if(func_params_string != exp_params_string){
+    vector<string> func_params = parseFuncParams(func_params_string);
 		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
-	} 
+	}
 };
 Call : CheckFunc LPAREN RPAREN {
-    
-    string func_type = getFunctionFullType($1->getName());
-    vector<string> func_params = functionTypeToVector(func_type);
-    
-	if(getFunctionParametersString($1->getName())!="()"){
-		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+  string func_params_string = getFunctionParametersString($1->getName());
+	if( func_params_string != "()"){
+    vector<string> func_params = parseFuncParams(func_params_string);
+    errorPrototypeMismatch(yylineno, $1->getName(), func_params);
 	} 
     
 };
@@ -300,8 +299,6 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 }
 
 void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
-  std::cout <<  " we are checking the LHS type ( of type ) " << std::endl;
-  std::cout <<  "  " << lhs->getType()<< "  " << std::endl;
     string lhs_type = getActualType(lhs);
     string rhs_type = getActualType(rhs);
 	 if(lhs_type != rhs_type){
@@ -312,7 +309,7 @@ void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
 
 void isBool(TypeContainer* con){
     string type = getActualType(con);
-		if (type == "BOOL"){
+		if (type != "BOOL"){
 			errorMismatch(yylineno);
 			exit(0);
 		}
@@ -383,11 +380,12 @@ string getRetType(ScopeData some_func){
 }
 
 string getFunctionParametersString(string id){
-    ScopeData func_data = table.getDataCopy(id);
-    string type = func_data.getTypeCopy();
-    std::size_t location = type.find("->");
-    type = type.substr(0,location);
-    return type;
+  vector<string> params;
+  ScopeData func_data = table.getDataCopy(id);
+  string type = func_data.getTypeCopy();
+  std::size_t location = type.find("->");
+  type = type.substr(0,location);
+  return type;
 }
 
 
@@ -441,4 +439,30 @@ vector<ScopeData> createFuncArgsVec(TypeContainer* formals){
         i--;
     }
     return output_vec;
+}
+
+vector<string> parseFuncParams(string id){
+  vector<string> params;
+  ScopeData func_data = table.getDataCopy(id);
+  string type = func_data.getTypeCopy();
+  std::size_t location = type.find("->");
+  string param_string = type.substr(1,location-2);
+  int param_num = (int)std::count(param_string.begin(), param_string.end(), ',');
+  int pos = 0;
+  for(int i = 0; i < param_num; i++){
+    pos = (int)type.find(",");
+    params.push_back(param_string.substr(0,pos-1));
+    param_string = param_string.substr(pos);
+  }
+  params.push_back(param_string);
+  return params;
+}
+
+string StringFromVec(vector<string> params){
+  if(params.size() == 0) return "()";
+  string temp = "(";
+  for(string param : params){
+    temp += param + ',';
+  }
+  return temp.substr(0,temp.size()-1)+')';
 }

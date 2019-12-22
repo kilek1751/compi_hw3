@@ -28,7 +28,7 @@ void Scope::insertScope() {
   symbol_table.push_back(unordered_map<string, ScopeData>());
   insertion_order.push_back(vector<string>());
   enum_ids.push_back(vector<string>());
-  func_args_vec.push_back(vector<ScopeData>());
+  func_args_vec.push_back(vector<string>());
 }
 
 void Scope::removeScope() {
@@ -47,7 +47,6 @@ void Scope::addScopeData(ScopeData scope_data) {
   for (string enum_id : enum_values) {
     enum_ids.back().push_back(enum_id);
   }
-  printTable();
 }
 
 void Scope::addFuncData(ScopeData scope_data) {
@@ -83,33 +82,13 @@ void Scope::printData() {
     }
     i--;
   }
-  //    vector<ScopeData> enums;
-  //    for (auto const& current_scope : symbol_table) {
-  //        for (auto const& data : current_scope) {
-  //            if(!data.second.getEnumValues().size()){
-  //                printID(data.second.getNameCopy(),
-  //                        data.second.getRelLocationCopy(),
-  //                        data.second.getTypeCopy());
-  //            }else {
-  //                vector<string> temp = data.second.getEnumValues();
-  //                printEnumType(data.second.getNameCopy(), temp);
-  //            }
-  //            for(auto enum_to_print: enums ){
-  //                vector<string> temp = enum_to_print.getEnumValues();
-  //                std::reverse(temp.begin(), temp.end());
-  //                printEnumType(enum_to_print.getNameCopy(), temp);
-  //            }
-  //        }
-  //    }
 }
 
 void Scope::printLastScopeData() {
   int i = (int)symbol_table.size() - 1;
-  for (ScopeData arg : func_args_vec.back()) {
-    printID(arg.getNameCopy(), arg.getRelLocationCopy(), arg.getTypeCopy());
-  }
   if (i < 0) return;
   vector<string>& last = insertion_order.back();
+  last.insert(last.begin(), func_args_vec.back().begin(),func_args_vec.back().end());
   vector<ScopeData> enums_to_print;
   for (auto it = last.begin(); it != last.end(); it++) {
     string symbol = *it;
@@ -129,22 +108,6 @@ void Scope::printLastScopeData() {
       printEnumType(enum_to_print.getNameCopy(), temp);
     }
   }
-  //    vector<ScopeData> enums;
-  //    unordered_map<string, ScopeData> last_scope = symbol_table.back();
-  //    for (auto const& data : last_scope) {
-  //        if(!data.second.getEnumValues().size()){
-  //            printID(data.second.getNameCopy(),
-  //                    data.second.getRelLocationCopy(),
-  //                    data.second.getTypeCopy());
-  //        } else {
-  //            enums.push_back(data.second);
-  //        }
-  //    }
-  //    for(auto enum_to_print: enums ){
-  //        vector<string> temp = enum_to_print.getEnumValues();
-  //        std::reverse(temp.begin(), temp.end());
-  //        printEnumType(enum_to_print.getNameCopy(), temp);
-  //    }
 }
 
 void Scope::printTable() {
@@ -173,13 +136,15 @@ ScopeData Scope::getDataCopy(string id) {
       }
     }
   }
-  printTable();
+//  printTable();
   throw std::exception();
 }
 
 void Scope::insertFuncArgs(vector<ScopeData> func_args) {
   for (ScopeData data : func_args) {
-    func_args_vec.back().push_back(data);
+//    std::cout << "inserting - " << data.getNameCopy() << " of type " << data.getTypeCopy() << std::endl;;
+    symbol_table.back()[data.getNameCopy()] = data;
+    func_args_vec.back().push_back(data.getNameCopy());
   }
 }
 

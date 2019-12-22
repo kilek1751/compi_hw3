@@ -196,22 +196,17 @@ Call : CheckFunc LPAREN ExpList RPAREN  {
     exit(0);
   }
   else {
-  for(int i = 0; i < func_def_params.size(); ++i){
-    if(func_def_params[i] == explist_params[i] ||
-      (func_def_params[i] == "INT" && explist_params[i] == "BYTE")){
-        /* all good do nothing */
+    for(int i = 0; i < func_def_params.size(); ++i){
+      if(func_def_params[i] == explist_params[i] ||
+        (func_def_params[i] == "INT" && explist_params[i] == "BYTE")){
+          /* all good do nothing */
+      }
+      else {
+        vector<string> func_params = parseFuncParams(func_params_string);
+        errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+        exit(0);
+      }
     }
-    else {
-      vector<string> func_params = parseFuncParams(func_params_string);
-      errorPrototypeMismatch(yylineno, $1->getName(), func_params);
-      exit(0);
-    }
-  }
-	//string exp_params_string = StringFromVec(explist_params);
-	//if(func_params_string != exp_params_string){
-  //  vector<string> func_params = parseFuncParams(func_params_string);
-	//	errorPrototypeMismatch(yylineno, $1->getName(), func_params);
-	//}
   }
 };
 Call : CheckFunc LPAREN RPAREN {
@@ -233,12 +228,12 @@ EnumType : ENUM ID																		{$$=new Enum($2->getName(),"ENUM");};
 Exp : LPAREN Exp RPAREN																{$$=$2;};
 Exp : Exp BINOPH Exp {
 	numCheck($1);
-    numCheck($2);
+  numCheck($2);
 	$$ = binOpType($1,$3);
 };
 Exp : Exp BINOPL Exp {
 	numCheck($1);
-    numCheck($3);
+  numCheck($3);
 	$$ = binOpType($1,$3);
 };
 Exp : ID																							{$$=$1;};
@@ -268,14 +263,14 @@ Exp : Exp OR Exp {
 	$$=new Bool($1->getValue() || $3->getValue(),"BOOL");
 };
 Exp : Exp RELOP Exp  {
-    numCheck($1);
-    numCheck($3);
+  numCheck($1);
+  numCheck($3);
 	typeCheck($1,$3);
 	$$=new Bool(true,"BOOL");
 };
 Exp : Exp RELEQ Exp{
-    numCheck($1);
-    numCheck($3);
+  numCheck($1);
+  numCheck($3);
 	typeCheck($1,$3);
 	$$=new Bool(false,"BOOL");
 };
@@ -296,7 +291,7 @@ Exp : LPAREN Type {
 int main()
 {
 	yyparse();
-    endScope();
+  endScope();
 	table.printLastScopeData();
 }
 
@@ -385,7 +380,7 @@ string getActualType(TypeContainer* some_data){
 
 void numCheck(TypeContainer* data){
     string type = getActualType(data);
-    if (type!="INT" || type!="BYTE"){
+    if (type!="INT" && type!="BYTE"){
         errorMismatch(yylineno);
         exit(0);
     }
@@ -463,8 +458,6 @@ vector<ScopeData> createFuncArgsVec(TypeContainer* formals){
 
 vector<string> parseFuncParams(string type){
   vector<string> params;
-  //ScopeData func_data = table.getDataCopy(id);
-  //string type = func_data.getTypeCopy();
   string param_string = type.substr(1,type.size()-2);
   int param_num = (int)std::count(param_string.begin(), param_string.end(), ',');
   int pos = 0;

@@ -6,7 +6,7 @@
 bool Scope::exist(string id) {
   for (auto const& current_scope : symbol_table) {
     if (current_scope.find(id) != current_scope.end()) {
-      return true;
+        return true;
     }
   }
   for (vector<string> curr_vec : enum_ids) {
@@ -147,4 +147,30 @@ void Scope::insertFuncArgs(vector<ScopeData> func_args) {
   }
 }
 
+string Scope::getParentEnumId(string enum_id){
+  for (unordered_map<string,ScopeData> curr_scope : symbol_table ){
+    for (auto data : curr_scope){
+      if (data.second.getEnumValues().size() != 0){
+        for (string curr_enum_id : data.second.getEnumValues()){
+          if (enum_id == curr_enum_id){
+            return data.second.getNameCopy();
+          }
+        }
+      }
+    }
+  }
+  throw std::exception();
+}
+
 void discoveringYYSTYPE(int yy) { cout << "YYstype is : " << yy << endl; }
+
+//bool Scope::isEnumContainer(string id){
+//  for (unordered_map<string,ScopeData> curr_scope : symbol_table ){
+//    for (auto data : curr_scope){
+//      if (data.second.getEnumValues().size() != 0 && data.second.getNameCopy()==id){
+//            return true;
+//          }
+//        }
+//      }
+//  return false;
+//}

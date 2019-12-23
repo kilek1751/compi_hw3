@@ -36,6 +36,8 @@ class Scope {
   int getNextOffset();
   void printTable();
   void insertFuncArgs(vector<ScopeData> func_args);
+  string getParentEnumId(string enum_id);
+//  bool isEnumContainer(string id);
   // void discoveringYYSTYPE(int yy);
 };
 

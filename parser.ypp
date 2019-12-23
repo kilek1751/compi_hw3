@@ -3,7 +3,8 @@
 	#include <stdlib.h>
 	#include "source.hpp"
 	#include "hw3_output.hpp"
-	#include "scope.h"
+  //#include <bits/stdc++.h>
+	#include "Scope.h"
 
 	using namespace output;
 
@@ -28,7 +29,7 @@
   vector<string> functionTypeToVector(string function_type);
   string getFunctionFullType(string id);
   vector<string> getFunctionParameters(string id);
-  void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp);
+  void enumTypeCheck(TypeContainer* enumtype,TypeContainer* future_id,TypeContainer* exp);
   vector<ScopeData> createFuncArgsVec(TypeContainer* formals);
   string getRetType(string type);
   string getFunctionRetTypeString(string id);
@@ -104,7 +105,11 @@ EnumDecl : ENUM ID {
 	wasAlreadyDefined($2);
 } LBRACE EnumeratorList RBRACE SC   {
     vector<string> enum_names = ((FormalListClass*)$5)->getNames();
-    table.addScopeData(ScopeData($2->getName(),0,"ENUM",enum_names));
+    if (std::find(enum_names.begin(),enum_names.end(),$2->getName())!=enum_names.end()){
+      errorDef(yylineno,$2->getName());
+      exit(0);
+    }
+    table.addScopeData(ScopeData($2->getName(),0,"ENUM_CONTAINER",enum_names));
 };
 RetType : Type																				{$$=$1;};
 RetType : VOID																				{$$=$1;};
@@ -114,8 +119,19 @@ FormalsList : FormalDecl															{$$=$1;};
 FormalsList : FormalDecl COMMA FormalsList						{((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
 FormalDecl : Type ID																	{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
 FormalDecl : EnumType ID															{$$=$1;};
-EnumeratorList : Enumerator														{$$=new FormalListClass(Id($1->getName(),$1->getType()));};
+EnumeratorList : Enumerator														{$$=$1;};
 EnumeratorList : EnumeratorList COMMA Enumerator	{
+    vector<string> vec1 = ((FormalListClass*)$1)->getNames();
+    vector<string> vec2 = ((FormalListClass*)$3)->getNames();
+    string enumrator_id = vec2[0];
+    if (table.exist(enumrator_id)){
+      errorDef(yylineno,enumrator_id);
+      exit(0);
+    }
+    if (std::find(vec1.begin(),vec1.end(),enumrator_id)!=vec1.end()){
+      errorDef(yylineno,enumrator_id);
+      exit(0);
+    }
     ((FormalListClass*)$3)->addIds(((FormalListClass*)$1)->getIds());
     $$=$3;
 };
@@ -136,7 +152,7 @@ Statement : Type ID {
     } SC {
 };
 Statement : EnumType ID {
-    notDefined($1);
+  notDefined($1);
     wasAlreadyDefined($2);
     table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));}
     SC	{};
@@ -144,13 +160,18 @@ Statement : EnumDecl															{};
 Statement : Type ID {
 	wasAlreadyDefined($2);
 } ASSIGN Exp SC	{
-  if($5->getType() == "ID")
+  if($5->getType() == "ID"){
     notDefined($5);
+  }
 	typeCheck($1,$5);
   insertToSymbolTable($1,$2);
 	};
 Statement : EnumType ID {wasAlreadyDefined($2);} ASSIGN Exp {
-    enumtTypeCheck($1,$5);
+    if ($5->getType()=="ID"){
+      notDefined($5);
+    }
+    enumTypeCheck($1,$2,$5);
+
     table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));
     } SC {
 };
@@ -335,6 +356,23 @@ void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
     string lhs_type = getActualType(lhs);
     string rhs_type = getActualType(rhs);
     if(lhs_type == "INT" && rhs_type =="BYTE") return;
+    if (lhs_type.find("enum")!=std::string::npos){
+      if (rhs_type=="ENUM"){
+        lhs_type = lhs_type.substr(lhs_type.find(" ")+1);
+        rhs_type = table.getParentEnumId(rhs->getName());
+        if (lhs_type!=rhs_type){
+          errorUndefEnumValue(yylineno,lhs->getName());
+          exit(0);
+        }
+        else {
+          return;
+        }
+      }
+      else {
+        errorUndefEnumValue(yylineno,lhs->getName());
+        exit(0);
+      }
+    }
     if(lhs_type != rhs_type){
       errorMismatch(yylineno);
       exit(0);
@@ -454,18 +492,19 @@ vector<string> getFunctionParameters(string id){
     return functionTypeToVector(type);
 }
 
-void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp){
+void enumTypeCheck(TypeContainer* enumtype,TypeContainer* future_id,TypeContainer* exp){
     string checked_enum = enumtype->getName();
     string exp_type = getActualType(exp);
-    std::size_t location = exp_type.find(" ");
-    if (location==std::string::npos){
-        errorMismatch(yylineno);
-        exit(0);
+    if (exp_type=="ENUM"){
+      exp_type = table.getParentEnumId(exp->getName());
     }
-    string actual_enum_id = exp_type.substr(location+1);
-    if (actual_enum_id!=checked_enum){
-        errorMismatch(yylineno);
-        exit(0);
+    else {
+      errorUndefEnumValue(yylineno,future_id->getName());
+      exit(0);
+    }
+    if (exp_type!=checked_enum){
+      errorUndefEnumValue(yylineno,future_id->getName());
+      exit(0);
     }
 }
 

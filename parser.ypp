@@ -579,7 +579,11 @@ vector<ScopeData> createFuncArgsVec(TypeContainer* formals){
 vector<string> parseFuncParams(string type){
   vector<string> params;
   string param_string = type.substr(1,type.size()-2);
-  int param_num = (int)std::count(param_string.begin(), param_string.end(), ',');
+  int count = 0;
+  for(char c : param_string){
+    if(c == ',') count++;
+  }
+  int param_num = count;//(int)std::count(param_string.begin(), param_string.end(), ',');
   int pos = 0;
   for(int i = 0; i < param_num; i++){
     pos = (int)type.find(",");

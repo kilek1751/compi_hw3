@@ -159,6 +159,7 @@ Statement : Call SC																		{};
 Statement : RETURN SC 	{
     if (last_function_ret_type!="VOID"){
         errorMismatch(yylineno);
+        exit(0);
     }
 };
 Statement : RETURN Exp {
@@ -170,7 +171,7 @@ Statement : RETURN Exp {
 Statement : IF LPAREN CheckType RPAREN InsertScope
     Statement %prec THEN RemoveScope
 Statement : IF LPAREN CheckType RPAREN InsertScope Statement RemoveScope ELSE InsertScope Statement RemoveScope
-Statement : WHILE LPAREN CheckType RPAREN {
+Statement : WHILE LPAREN InsertScope CheckType RemoveScope RPAREN {
     while_count++;
     table.insertScope();
     } Statement {
@@ -188,11 +189,13 @@ CheckType : Exp {isBool($1);};
 Statement : BREAK SC  {
     if (while_count==0){
         errorUnexpectedBreak(yylineno);
+        exit(0);
     }
 };
 Statement : CONTINUE SC	{
     if(while_count==0){
         errorUnexpectedContinue(yylineno);
+        exit(0);
     }
 };
 Call : CheckFunc LPAREN ExpList RPAREN  {
@@ -229,6 +232,7 @@ Call : CheckFunc LPAREN RPAREN {
 	if( func_params_string != "()"){
     vector<string> func_params = parseFuncParams(func_params_string);
     errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+    exit(0);
 	}
 };
 CheckFunc : ID {
@@ -257,6 +261,7 @@ Exp : NUM																							{$$=$1;};
 Exp : NUM B		{
     if ($1->getVal()>255){
         errorByteTooLarge(yylineno,std::to_string($1->getVal()));
+        exit(0);
     }
     $$=new Byte($1->getVal(),"BYTE");
 };

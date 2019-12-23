@@ -182,7 +182,7 @@ Statement : EnumType ID {
     wasAlreadyDefined($2);
     table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));}
     SC	{};
-Statement : EnumDecl															{};
+Statement : EnumDecl {};
 Statement : Type ID {
 	wasAlreadyDefined($2);
 } ASSIGN Exp SC	{
@@ -210,10 +210,17 @@ Statement : RETURN SC 	{
     }
 };
 Statement : RETURN Exp {
-    if (getActualType($2) != last_function_ret_type){
+  if (last_function_ret_type=="VOID"){
+    errorMismatch(yylineno);
+    exit(0);
+  }
+  string exp_type = getActualType($2);
+  if( !(last_function_ret_type == "INT" && exp_type == "BYTE" )){
+    if (exp_type != last_function_ret_type ) {
         errorMismatch(yylineno);
         exit(0);
     }
+  }
 } SC	
 Statement : IF LPAREN CheckType RPAREN InsertScope
     Statement %prec THEN RemoveScope
@@ -272,6 +279,17 @@ Call : CheckFunc LPAREN ExpList RPAREN  {
       }
     }
   }
+  string call_type = getActualType($1);
+  if(call_type == "INT"){
+    $$=new Int(0,call_type);
+  }
+  else if(call_type == "BOOL"){
+    $$=new Bool(true,call_type);
+  }else if(call_type == "BYTE"){
+    $$=new Byte(0,call_type);
+  }else{
+    $$=new Enum("",call_type);
+  }
   //std::cout << "--" << getFunctionRetTypeString($1->getName()) << "--" << std::endl;
 };
 Call : CheckFunc LPAREN RPAREN {
@@ -281,6 +299,18 @@ Call : CheckFunc LPAREN RPAREN {
     errorPrototypeMismatch(yylineno, $1->getName(), func_params);
     exit(0);
 	}
+  string call_type = getActualType($1);
+  if(call_type == "INT"){
+    $$=new Int(0,call_type);
+  }
+  
+  else if(call_type == "BOOL"){
+    $$=new Bool(true,call_type);
+  }else if(call_type == "BYTE"){
+    $$=new Byte(0,call_type);
+  }else{
+    $$=new Enum("",call_type);
+  }
 };
 CheckFunc : ID {
     CheckDefinedFunc($1);

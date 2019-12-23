@@ -3,7 +3,6 @@
 	#include <stdlib.h>
 	#include "source.hpp"
 	#include "hw3_output.hpp"
-  //#include <bits/stdc++.h>
 	#include "Scope.h"
 
 	using namespace output;
@@ -93,16 +92,20 @@ FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
         errorDef(yylineno,$3->getName());
         exit(0);
       }
-        table.insertScope();
+        vector<string> formals_types = $6->getTypes();
+        string func_type = makeFunctionType($1->getType(),formals_types);
         vector<ScopeData> created_args = createFuncArgsVec($6);
+        table.addFuncData(ScopeData($3->getName(),0,func_type));
+        table.insertScope();
         table.insertFuncArgs(created_args);
+        
     } Statements RBRACE  {
-    vector<string> formals_types = $6->getTypes();
-    string func_type = makeFunctionType($1->getType(),formals_types);
+    
+    
+    
     endScope();
     table.printLastScopeData();
     table.removeScope();
-    table.addFuncData(ScopeData($3->getName(),0,func_type));
 };
 Enums : /*epsilon*/																		{};
 Enums : EnumDecl Enums																{};
@@ -288,7 +291,8 @@ Call : CheckFunc LPAREN ExpList RPAREN  {
   }else if(call_type == "BYTE"){
     $$=new Byte(0,call_type);
   }else{
-    $$=new Enum("",call_type);
+    string no_str = "";
+    $$=new Enum(no_str,call_type);
   }
   //std::cout << "--" << getFunctionRetTypeString($1->getName()) << "--" << std::endl;
 };
@@ -309,7 +313,8 @@ Call : CheckFunc LPAREN RPAREN {
   }else if(call_type == "BYTE"){
     $$=new Byte(0,call_type);
   }else{
-    $$=new Enum("",call_type);
+    string no_str= "";
+    $$=new Enum(no_str,call_type);
   }
 };
 CheckFunc : ID {

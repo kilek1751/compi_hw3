@@ -14,7 +14,7 @@
   TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs);
   void typeCheck(TypeContainer* lhs,TypeContainer* rhs);
   void isBool(TypeContainer* con);
-  void wasDefined(TypeContainer* con);
+  void wasAlreadyDefined(TypeContainer* con);
   void notDefined(TypeContainer* con);
   void CheckDefinedFunc(TypeContainer* con);
   void insertToSymbolTable(TypeContainer* type,TypeContainer* id);
@@ -82,7 +82,7 @@ Program	: {
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
 FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
-    wasDefined($3);
+    wasAlreadyDefined($3);
     if ($3->getName()=="main"){
         is_main_defined=true;
     }
@@ -101,7 +101,7 @@ FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
 Enums : /*epsilon*/																		{};
 Enums : EnumDecl Enums																{};
 EnumDecl : ENUM ID {
-	wasDefined($2);
+	wasAlreadyDefined($2);
 } LBRACE EnumeratorList RBRACE SC   {
     vector<string> enum_names = ((FormalListClass*)$5)->getNames();
     table.addScopeData(ScopeData($2->getName(),0,"ENUM",enum_names));
@@ -120,7 +120,7 @@ EnumeratorList : EnumeratorList COMMA Enumerator	{
     $$=$3;
 };
 Enumerator : ID	{
-	wasDefined($1);
+	wasAlreadyDefined($1);
 	$$=new FormalListClass(Id($1->getName(),$1->getType()));
 };
 Statements : Statement																{};
@@ -131,23 +131,25 @@ Statement : LBRACE {table.insertScope();} Statements RBRACE {
     table.removeScope();
 };
 Statement : Type ID {
-    wasDefined($2);
+    wasAlreadyDefined($2);
     insertToSymbolTable($1,$2);
     } SC {
 };
 Statement : EnumType ID {
     notDefined($1);
-	wasDefined($2);
-    table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));} 
+    wasAlreadyDefined($2);
+    table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));}
     SC	{};
 Statement : EnumDecl															{};
 Statement : Type ID {
-	wasDefined($2);
-	insertToSymbolTable($1,$2);
+	wasAlreadyDefined($2);
 } ASSIGN Exp SC	{
+  if($5->getType() == "ID")
+    notDefined($5);
 	typeCheck($1,$5);
+  insertToSymbolTable($1,$2);
 	};
-Statement : EnumType ID {wasDefined($2);} ASSIGN Exp {  
+Statement : EnumType ID {wasAlreadyDefined($2);} ASSIGN Exp {
     enumtTypeCheck($1,$5);
     table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));
     } SC {
@@ -162,6 +164,7 @@ Statement : RETURN SC 	{
 Statement : RETURN Exp {
     if (getActualType($2) != last_function_ret_type){
         errorMismatch(yylineno);
+        exit(0);
     }
 } SC	
 Statement : IF LPAREN CheckType RPAREN InsertScope
@@ -341,7 +344,7 @@ void isBool(TypeContainer* con){
 		}
  }
 
-void wasDefined(TypeContainer* con){
+void wasAlreadyDefined(TypeContainer* con){
 	if( table.exist( con->getName() )){
 		errorDef(yylineno, con->getName());
 		exit(0);
@@ -349,9 +352,9 @@ void wasDefined(TypeContainer* con){
 }
 
 void notDefined(TypeContainer* con){
-	 if(!table.exist( con->getName() )){
-		errorUndef(yylineno, con->getName());
-		exit(0);
+	 if( table.exist( con->getName() ) == false ){
+      errorUndef(yylineno, con->getName());
+      exit(0);
 	}
 }
 

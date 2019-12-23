@@ -88,6 +88,11 @@ FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
         is_main_defined=true;
     }
     } LPAREN Formals RPAREN LBRACE {
+      vector<string> formals_ids = ((FormalListClass*)$6)->getNames();
+      if (std::find(formals_ids.begin(),formals_ids.end(),$3->getName())!=formals_ids.end()){
+        errorDef(yylineno,$3->getName());
+        exit(0);
+      }
         table.insertScope();
         vector<ScopeData> created_args = createFuncArgsVec($6);
         table.insertFuncArgs(created_args);
@@ -116,9 +121,27 @@ RetType : VOID																				{$$=$1;};
 Formals : /*epsilon*/																	{$$ = new FormalListClass();};
 Formals : FormalsList																	{$$=$1;};
 FormalsList : FormalDecl															{$$=$1;};
-FormalsList : FormalDecl COMMA FormalsList						{((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
-FormalDecl : Type ID																	{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
-FormalDecl : EnumType ID															{$$=$1;};
+FormalsList : FormalDecl COMMA FormalsList {
+  vector<string> vec1 = ((FormalListClass*)$1)->getNames();
+  vector<string> vec2 = ((FormalListClass*)$3)->getNames();
+  string formal_id = vec1[0];
+  if (std::find(vec2.begin(),vec2.end(),formal_id)!=vec2.end()){
+    errorDef(yylineno,formal_id);
+    exit(0);
+  }
+  ((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
+FormalDecl : Type ID  {
+  wasAlreadyDefined($2);
+  $$=new FormalListClass(Id($2->getName(),$1->getType()));
+};
+FormalDecl : EnumType ID  {
+  if(!table.exist($1->getName())){
+    errorUndefEnum(yylineno,$1->getName());
+    exit(0);
+  }
+  wasAlreadyDefined($2);
+  $$=new FormalListClass(Id($2->getName(),$1->getType()));
+};
 EnumeratorList : Enumerator														{$$=$1;};
 EnumeratorList : EnumeratorList COMMA Enumerator	{
     vector<string> vec1 = ((FormalListClass*)$1)->getNames();
@@ -152,7 +175,10 @@ Statement : Type ID {
     } SC {
 };
 Statement : EnumType ID {
-  notDefined($1);
+  if (!table.exist($1->getName())){
+    errorUndefEnum(yylineno,$1->getName());
+    exit(0);
+  }
     wasAlreadyDefined($2);
     table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));}
     SC	{};

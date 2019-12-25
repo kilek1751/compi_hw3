@@ -3,35 +3,39 @@
 	#include <stdlib.h>
 	#include "source.hpp"
 	#include "hw3_output.hpp"
-	#include "scope.h"
+	#include "Scope.h"
 
 	using namespace output;
 
-	int yylex();
-	extern int yylineno;
-	extern char* yytext;
-	extern void discoveringYYSTYPE(int yy);
-	TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs);
-	void typeCheck(TypeContainer* lhs,TypeContainer* rhs);
-	void isBool(TypeContainer* con);
-	void wasDefined(TypeContainer* con);
-	void notDefined(TypeContainer* con);
-	void CheckDefinedFunc(TypeContainer* con);
-	void insertToSymbolTable(TypeContainer* type,TypeContainer* id);
-    string getActualType(TypeContainer* some_data);
-	int yyerror(const char * message);
-    string getRetType(ScopeData some_func);
-    void numCheck(TypeContainer* data);
-    string getFunctionParametersString(string id);
-    vector<string> functionTypeToVector(string function_type);
-    string getFunctionFullType(string id);
-    vector<string> getFunctionParameters(string id);
-    void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp);
-    vector<ScopeData> createFuncArgsVec(TypeContainer* formals);
-	Scope table;
-    int while_count = 0;
-    string last_function_ret_type = "VOID";
-    bool is_main_defined = false;
+  int yylex();
+  extern int yylineno;
+  extern char* yytext;
+  extern void discoveringYYSTYPE(int yy);
+  TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs);
+  void typeCheck(TypeContainer* lhs,TypeContainer* rhs);
+  void isBool(TypeContainer* con);
+  void wasAlreadyDefined(TypeContainer* con);
+  void notDefined(TypeContainer* con);
+  void CheckDefinedFunc(TypeContainer* con);
+  void insertToSymbolTable(TypeContainer* type,TypeContainer* id);
+  string getActualType(TypeContainer* some_data);
+  int yyerror(const char * message);
+  string getRetType(ScopeData some_func);
+  void numCheck(TypeContainer* data);
+  string getFunctionParametersString(string id);
+  vector<string> parseFuncParams(string id);
+  string StringFromVec(vector<string> params);
+  vector<string> functionTypeToVector(string function_type);
+  string getFunctionFullType(string id);
+  vector<string> getFunctionParameters(string id);
+  void enumTypeCheck(TypeContainer* enumtype,TypeContainer* future_id,TypeContainer* exp);
+  vector<ScopeData> createFuncArgsVec(TypeContainer* formals);
+  string getRetType(string type);
+  string getFunctionRetTypeString(string id);
+  Scope table;
+  int while_count = 0;
+  string last_function_ret_type = "VOID";
+  bool is_main_defined = false;
 
 %}
 
@@ -63,7 +67,7 @@ Program	: {
 	string printi_func_type = makeFunctionType("VOID",printi_func_args);
 	table.addFuncData(ScopeData("print",0,print_func_type));
 	table.addFuncData(ScopeData("printi",0,printi_func_type));
-    }
+  }
 	Enums Funcs {
         if (!is_main_defined){
             errorMainMissing();
@@ -78,45 +82,90 @@ Program	: {
 Funcs : /*epsilon*/ 																									{};
 Funcs : FuncDecl Funcs 																								{};
 FuncDecl : RetType {last_function_ret_type=$1->getType();} ID {
-    wasDefined($3);
+    wasAlreadyDefined($3);
     if ($3->getName()=="main"){
         is_main_defined=true;
     }
     } LPAREN Formals RPAREN LBRACE {
-        table.insertScope();
+      vector<string> formals_ids = ((FormalListClass*)$6)->getNames();
+      if (std::find(formals_ids.begin(),formals_ids.end(),$3->getName())!=formals_ids.end()){
+        errorDef(yylineno,$3->getName());
+        exit(0);
+      }
+        vector<string> formals_types = $6->getTypes();
+        string func_type = makeFunctionType($1->getType(),formals_types);
         vector<ScopeData> created_args = createFuncArgsVec($6);
+        table.addFuncData(ScopeData($3->getName(),0,func_type));
+        table.insertScope();
         table.insertFuncArgs(created_args);
+        
     } Statements RBRACE  {
- 	vector<string> formals_types = $6->getTypes();
-	string func_type = makeFunctionType($1->getType(),formals_types);
-	endScope();
-	table.printLastScopeData();
+    endScope();
+    table.printLastScopeData();
     table.removeScope();
-    table.addFuncData(ScopeData($3->getName(),0,func_type));
 };
 Enums : /*epsilon*/																		{};
-Enums : EnumDecl Enums																{};
+Enums : EnumDecl {
+  vector<string> names = ((FormalListClass*)$1)->getNames();
+  //table.addScopeData(ScopeData($1->getName(),0,"ENUM_CONTAINER",names));
+  table.insertGlobalEnum($1->getName());
+} Enums			{};
 EnumDecl : ENUM ID {
-	wasDefined($2);
+	wasAlreadyDefined($2);
 } LBRACE EnumeratorList RBRACE SC   {
     vector<string> enum_names = ((FormalListClass*)$5)->getNames();
-    table.addScopeData(ScopeData($2->getName(),0,"ENUM",enum_names));
+    if (std::find(enum_names.begin(),enum_names.end(),$2->getName())!=enum_names.end()){
+      errorDef(yylineno,$2->getName());
+      exit(0);
+    }
+    table.addScopeData(ScopeData($2->getName(),0,"ENUM_CONTAINER",enum_names));
+    $$=new FormalListClass($2->getName(),((FormalListClass*)$5)->getIds());
 };
 RetType : Type																				{$$=$1;};
 RetType : VOID																				{$$=$1;};
 Formals : /*epsilon*/																	{$$ = new FormalListClass();};
 Formals : FormalsList																	{$$=$1;};
 FormalsList : FormalDecl															{$$=$1;};
-FormalsList : FormalDecl COMMA FormalsList						{((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
-FormalDecl : Type ID																	{$$=new FormalListClass(Id($2->getName(),$1->getType()));};
-FormalDecl : EnumType ID															{$$=$1;};
-EnumeratorList : Enumerator														{$$=new FormalListClass(Id($1->getName(),$1->getType()));};
+FormalsList : FormalDecl COMMA FormalsList {
+  vector<string> vec1 = ((FormalListClass*)$1)->getNames();
+  vector<string> vec2 = ((FormalListClass*)$3)->getNames();
+  string formal_id = vec1[0];
+  if (std::find(vec2.begin(),vec2.end(),formal_id)!=vec2.end()){
+    errorDef(yylineno,formal_id);
+    exit(0);
+  }
+  ((FormalListClass*)$1)->addIds(((FormalListClass*)$3)->getIds());$$=$1;};
+FormalDecl : Type ID  {
+  wasAlreadyDefined($2);
+  $$=new FormalListClass(Id($2->getName(),$1->getType()));
+};
+FormalDecl : EnumType ID  {
+  if(!table.exist($1->getName())){
+    errorUndefEnum(yylineno,$1->getName());
+    exit(0);
+  }
+  wasAlreadyDefined($2);
+  //cout << $1->getType() << endl;
+  $$=new FormalListClass(Id($2->getName(),"enum "+$1->getName()));
+};
+EnumeratorList : Enumerator														{$$=$1;};
 EnumeratorList : EnumeratorList COMMA Enumerator	{
+    vector<string> vec1 = ((FormalListClass*)$1)->getNames();
+    vector<string> vec2 = ((FormalListClass*)$3)->getNames();
+    string enumrator_id = vec2[0];
+    if (table.exist(enumrator_id)){
+      errorDef(yylineno,enumrator_id);
+      exit(0);
+    }
+    if (std::find(vec1.begin(),vec1.end(),enumrator_id)!=vec1.end()){
+      errorDef(yylineno,enumrator_id);
+      exit(0);
+    }
     ((FormalListClass*)$3)->addIds(((FormalListClass*)$1)->getIds());
     $$=$3;
 };
 Enumerator : ID	{
-	wasDefined($1);
+	wasAlreadyDefined($1);
 	$$=new FormalListClass(Id($1->getName(),$1->getType()));
 };
 Statements : Statement																{};
@@ -127,43 +176,65 @@ Statement : LBRACE {table.insertScope();} Statements RBRACE {
     table.removeScope();
 };
 Statement : Type ID {
-    wasDefined($2);
+    wasAlreadyDefined($2);
     insertToSymbolTable($1,$2);
     } SC {
 };
 Statement : EnumType ID {
-    notDefined($1);
-	wasDefined($2);
-    table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));} 
+  if (!table.exist($1->getName())){
+    errorUndefEnum(yylineno,$1->getName());
+    exit(0);
+  }
+    wasAlreadyDefined($2);
+    table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));}
     SC	{};
-Statement : EnumDecl															{};
+Statement : EnumDecl {
+  //vector<string> names = ((FormalListClass*)$1)->getNames();
+  //table.addScopeData(ScopeData($1->getName(),0,"ENUM_CONTAINER",names))
+  ;};
 Statement : Type ID {
-	wasDefined($2);
-	insertToSymbolTable($1,$2);
-	} ASSIGN Exp SC	{
+	wasAlreadyDefined($2);
+} ASSIGN Exp SC	{
+  if($5->getType() == "ID"){
+    notDefined($5);
+  }
 	typeCheck($1,$5);
+  insertToSymbolTable($1,$2);
 	};
-Statement : EnumType ID {wasDefined($2);} ASSIGN Exp {  
-    enumtTypeCheck($1,$5);
+Statement : EnumType ID {wasAlreadyDefined($2);} ASSIGN Exp {
+    if ($5->getType()=="ID"){
+      notDefined($5);
+    }
+    enumTypeCheck($1,$2,$5);
+
     table.addScopeData(ScopeData($2->getName(),table.getNextOffset(),"enum "+$1->getName()));
     } SC {
 };
-Statement : ID { notDefined($1);} ASSIGN Exp SC {typeCheck($1,$4);};
+Statement : ID ASSIGN Exp SC {notDefined($1); typeCheck($1,$3);};
 Statement : Call SC																		{};
 Statement : RETURN SC 	{
     if (last_function_ret_type!="VOID"){
         errorMismatch(yylineno);
+        exit(0);
     }
 };
 Statement : RETURN Exp {
-    if (getActualType($2)!=last_function_ret_type){
+  if (last_function_ret_type=="VOID"){
+    errorMismatch(yylineno);
+    exit(0);
+  }
+  string exp_type = getActualType($2);
+  if( !(last_function_ret_type == "INT" && exp_type == "BYTE" )){
+    if (exp_type != last_function_ret_type ) {
         errorMismatch(yylineno);
+        exit(0);
     }
+  }
 } SC	
 Statement : IF LPAREN CheckType RPAREN InsertScope
     Statement %prec THEN RemoveScope
 Statement : IF LPAREN CheckType RPAREN InsertScope Statement RemoveScope ELSE InsertScope Statement RemoveScope
-Statement : WHILE LPAREN CheckType RPAREN {
+Statement : WHILE LPAREN InsertScope CheckType RemoveScope RPAREN {
     while_count++;
     table.insertScope();
     } Statement {
@@ -171,42 +242,104 @@ Statement : WHILE LPAREN CheckType RPAREN {
         table.printLastScopeData();
         table.removeScope();
 };
-InsertScope : {table.insertScope();}
-RemoveScope : {table.removeScope();}
+InsertScope : {
+  table.insertScope();}
+RemoveScope : {
+  endScope();
+  table.removeScope();
+}
 CheckType : Exp {isBool($1);};
 Statement : BREAK SC  {
     if (while_count==0){
         errorUnexpectedBreak(yylineno);
+        exit(0);
     }
 };
 Statement : CONTINUE SC	{
     if(while_count==0){
         errorUnexpectedContinue(yylineno);
+        exit(0);
     }
 };
 Call : CheckFunc LPAREN ExpList RPAREN  {
+	CheckDefinedFunc($1);
+	string func_params_string = getFunctionParametersString($1->getName()); // (type1,type2,type3..)
+  vector<string> func_def_params = parseFuncParams(func_params_string);
+  vector<string> explist_params = $3->getTypes(); // returns the typelist
+  
+  for (string curr_type : explist_params){
+    int pos = (int)curr_type.find(" ");
+    if (pos==std::string::npos){
+      continue;
+    }
+    string enum_type = curr_type.substr(pos);
+    if(!table.findGlobalEnum(enum_type)){
+      errorPrototypeMismatch(yylineno, $1->getName(), explist_params);
+      exit(0);
+    }
+  }
+  if(func_def_params.size() != explist_params.size()){
+    vector<string> func_params = parseFuncParams(func_params_string);
 	
-	vector<string> func_params = getFunctionParameters($1->getName());
-	vector<string> exp_list_params = $1->getTypes();
-	if(func_params != exp_list_params){
-		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
-	} 
+    errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+	
+    exit(0);
+  }
+  else {
+    for(int i = 0; i < func_def_params.size(); ++i){
+      if(func_def_params[i] == explist_params[i] ||
+        (func_def_params[i] == "INT" && explist_params[i] == "BYTE")){
+          /* all good do nothing */
+      }
+      else {
+	  
+        vector<string> func_params = parseFuncParams(func_params_string);
+        errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+        exit(0);
+      }
+    }
+  }
+  string call_type = getActualType($1);
+  if(call_type == "INT"){
+    $$=new Int(0,call_type);
+  }
+  else if(call_type == "BOOL"){
+    $$=new Bool(true,call_type);
+  }else if(call_type == "BYTE"){
+    $$=new Byte(0,call_type);
+  }else{
+    string no_str = "";
+    $$=new Enum(no_str,call_type);
+  }
+  //std::cout << "--" << getFunctionRetTypeString($1->getName()) << "--" << std::endl;
 };
 Call : CheckFunc LPAREN RPAREN {
-    
-    string func_type = getFunctionFullType($1->getName());
-    vector<string> func_params = functionTypeToVector(func_type);
-    
-	if(getFunctionParametersString($1->getName())!="()"){
-		errorPrototypeMismatch(yylineno, $1->getName(), func_params);
-	} 
-    
+	CheckDefinedFunc($1);
+  string func_params_string = getFunctionParametersString($1->getName());
+	if( func_params_string != "()"){
+    vector<string> func_params = parseFuncParams(func_params_string);
+    errorPrototypeMismatch(yylineno, $1->getName(), func_params);
+    exit(0);
+	}
+  string call_type = getActualType($1);
+  if(call_type == "INT"){
+    $$=new Int(0,call_type);
+  }
+  
+  else if(call_type == "BOOL"){
+    $$=new Bool(true,call_type);
+  }else if(call_type == "BYTE"){
+    $$=new Byte(0,call_type);
+  }else{
+    string no_str= "";
+    $$=new Enum(no_str,call_type);
+  }
 };
 CheckFunc : ID {
-    CheckDefinedFunc($1);
+    //CheckDefinedFunc($1);
 };
-ExpList : Exp																					{$$=new ExpList($1->getType());};
-ExpList : Exp COMMA ExpList														{$$=new ExpList($1->getType());$$->addTypes($3->getTypes());};
+ExpList : Exp																					{$$=new ExpList(getActualType($1));};
+ExpList : Exp COMMA ExpList														{$$=new ExpList(getActualType($1));$$->addTypes($3->getTypes());};
 Type : INT																						{$$=$1;};
 Type : BYTE																						{$$=$1;};
 Type : BOOL																						{$$=$1;};
@@ -214,12 +347,12 @@ EnumType : ENUM ID																		{$$=new Enum($2->getName(),"ENUM");};
 Exp : LPAREN Exp RPAREN																{$$=$2;};
 Exp : Exp BINOPH Exp {
 	numCheck($1);
-    numCheck($2);
+  numCheck($2);
 	$$ = binOpType($1,$3);
 };
 Exp : Exp BINOPL Exp {
 	numCheck($1);
-    numCheck($3);
+  numCheck($3);
 	$$ = binOpType($1,$3);
 };
 Exp : ID																							{$$=$1;};
@@ -228,6 +361,7 @@ Exp : NUM																							{$$=$1;};
 Exp : NUM B		{
     if ($1->getVal()>255){
         errorByteTooLarge(yylineno,std::to_string($1->getVal()));
+        exit(0);
     }
     $$=new Byte($1->getVal(),"BYTE");
 };
@@ -249,14 +383,14 @@ Exp : Exp OR Exp {
 	$$=new Bool($1->getValue() || $3->getValue(),"BOOL");
 };
 Exp : Exp RELOP Exp  {
-    numCheck($1);
-    numCheck($3);
+  numCheck($1);
+  numCheck($3);
 	typeCheck($1,$3);
 	$$=new Bool(true,"BOOL");
 };
 Exp : Exp RELEQ Exp{
-    numCheck($1);
-    numCheck($3);
+  numCheck($1);
+  numCheck($3);
 	typeCheck($1,$3);
 	$$=new Bool(false,"BOOL");
 };
@@ -265,7 +399,8 @@ Exp : LPAREN Type {
         errorMismatch(yylineno);
         exit(0);
     } } RPAREN Exp %prec CAST {
-        if (getActualType($5)!="ENUM"){
+      if (getActualType($5).find("enum")==std::string::npos && getActualType($5)!="ENUM"){
+        //cout << getActualType($5) << endl;
             errorMismatch(yylineno);
             exit(0);
         }
@@ -277,7 +412,7 @@ Exp : LPAREN Type {
 int main()
 {
 	yyparse();
-    endScope();
+  endScope();
 	table.printLastScopeData();
 }
 
@@ -300,21 +435,40 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
     string lhs_type = getActualType(lhs);
     string rhs_type = getActualType(rhs);
-	 if(lhs_type != rhs_type){
-		errorMismatch(yylineno);
-		exit(0);
+
+    if(lhs_type == "INT" && rhs_type =="BYTE") return;
+    if (lhs_type.find("enum")!=std::string::npos){
+      if (rhs_type=="ENUM"){
+        lhs_type = lhs_type.substr(lhs_type.find(" ")+1);
+        rhs_type = table.getParentEnumId(rhs->getName());
+        if (lhs_type!=rhs_type){
+          errorUndefEnumValue(yylineno,lhs->getName());
+          exit(0);
+        }
+        else {
+          return;
+        }
+      }
+      else {
+        errorUndefEnumValue(yylineno,lhs->getName());
+        exit(0);
+      }
+    }
+    if(lhs_type != rhs_type){
+      errorMismatch(yylineno);
+      exit(0);
 	}
 }
 
 void isBool(TypeContainer* con){
     string type = getActualType(con);
-		if (type == "BOOL"){
+		if (type != "BOOL"){
 			errorMismatch(yylineno);
 			exit(0);
 		}
  }
 
-void wasDefined(TypeContainer* con){
+void wasAlreadyDefined(TypeContainer* con){
 	if( table.exist( con->getName() )){
 		errorDef(yylineno, con->getName());
 		exit(0);
@@ -322,9 +476,9 @@ void wasDefined(TypeContainer* con){
 }
 
 void notDefined(TypeContainer* con){
-	 if(!table.exist( con->getName() )){
-		errorUndef(yylineno, con->getName());
-		exit(0);
+	 if( table.exist( con->getName() ) == false || table.getDataCopy(con->getName()).getEnumValues().size()!=0){
+      errorUndef(yylineno, con->getName());
+      exit(0);
 	}
 }
 
@@ -365,7 +519,7 @@ string getActualType(TypeContainer* some_data){
 
 void numCheck(TypeContainer* data){
     string type = getActualType(data);
-    if (type!="INT" || type!="BYTE"){
+    if (type!="INT" && type!="BYTE"){
         errorMismatch(yylineno);
         exit(0);
     }
@@ -378,12 +532,19 @@ string getRetType(ScopeData some_func){
     return type;
 }
 
+/* gets function name and returns the type (type1,type2,type3) */
 string getFunctionParametersString(string id){
-    ScopeData func_data = table.getDataCopy(id);
-    string type = func_data.getTypeCopy();
-    std::size_t location = type.find("->");
-    type = type.substr(0,location);
-    return type;
+  ScopeData func_data = table.getDataCopy(id);
+  string type = func_data.getTypeCopy();
+  std::size_t location = type.find("->");
+  type = type.substr(0,location);
+  return type;
+}
+
+string getFunctionRetTypeString(string id){
+  ScopeData func_data = table.getDataCopy(id);
+  string RetType = func_data.getTypeCopy();
+  return getRetType(RetType);
 }
 
 
@@ -412,18 +573,19 @@ vector<string> getFunctionParameters(string id){
     return functionTypeToVector(type);
 }
 
-void enumtTypeCheck(TypeContainer* enumtype,TypeContainer* exp){
+void enumTypeCheck(TypeContainer* enumtype,TypeContainer* future_id,TypeContainer* exp){
     string checked_enum = enumtype->getName();
     string exp_type = getActualType(exp);
-    std::size_t location = exp_type.find(" ");
-    if (location==std::string::npos){
-        errorMismatch(yylineno);
-        exit(0);
+    if (exp_type=="ENUM"){
+      exp_type = table.getParentEnumId(exp->getName());
     }
-    string actual_enum_id = exp_type.substr(location+1);
-    if (actual_enum_id!=checked_enum){
-        errorMismatch(yylineno);
-        exit(0);
+    else {
+      errorUndefEnumValue(yylineno,future_id->getName());
+      exit(0);
+    }
+    if (exp_type!=checked_enum){
+      errorUndefEnumValue(yylineno,future_id->getName());
+      exit(0);
     }
 }
 
@@ -437,4 +599,39 @@ vector<ScopeData> createFuncArgsVec(TypeContainer* formals){
         i--;
     }
     return output_vec;
+}
+
+vector<string> parseFuncParams(string type){
+  vector<string> params;
+  string param_string = type.substr(1,type.size()-2);
+  int count = 0;
+  for(char c : param_string){
+    if(c == ',') count++;
+  }
+  int param_num = count;//(int)std::count(param_string.begin(), param_string.end(), ',');
+  int pos = 0;
+  for(int i = 0; i < param_num; i++){
+    pos = (int)type.find(",");
+    params.push_back(param_string.substr(0,pos-1));
+    param_string = param_string.substr(pos);
+  }
+  params.push_back(param_string);
+  return params;
+}
+
+string StringFromVec(vector<string> params){
+  if(params.size() == 0) return "()";
+  string temp = "(";
+  for(string param : params){
+    temp += param + ',';
+  }
+  return temp.substr(0,temp.size()-1)+')';
+}
+
+string getRetType(string type){
+  int pos = (int)type.find("->");
+  if(pos == std::string::npos){
+    return "";
+  }
+  return type.substr(pos+2,type.size()-2);
 }

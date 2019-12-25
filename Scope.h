@@ -5,6 +5,7 @@
 
 #include <list>
 #include <stack>
+#include <set>
 #include <unordered_map>
 #include "ScopeData.h"
 #include "hw3_output.hpp"
@@ -22,7 +23,9 @@ class Scope {
   vector<vector<string>> insertion_order;
   stack<int> offsetStack;
   vector<vector<string>> enum_ids;
-  vector<vector<ScopeData>> func_args_vec;
+  vector<vector<string>> func_args_vec;
+  vector<string> global_enums;
+  vector<string> identifiers;
 
  public:
   bool exist(string id);
@@ -36,6 +39,12 @@ class Scope {
   int getNextOffset();
   void printTable();
   void insertFuncArgs(vector<ScopeData> func_args);
+  string getParentEnumId(string enum_id);
+  void insertGlobalEnum(string glob_enum);
+  bool findGlobalEnum(string glob_enum);
+//  void insertIdentifiers(string ids);
+//  bool IdOnly(string id);
+//  bool isEnumContainer(string id);
   // void discoveringYYSTYPE(int yy);
 };
 

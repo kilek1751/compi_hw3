@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using std::cout;
 using std::endl;
@@ -115,12 +116,17 @@ class ExpList : public TypeContainer {
 
 class FormalListClass : public TypeContainer {
   vector<Id> formals;
-
+  string name = "";
  public:
   FormalListClass() : TypeContainer(){};
   FormalListClass(Id id) : TypeContainer(id.getType()) {
     formals.emplace_back(id);
   }
+  FormalListClass(string got_id,vector<Id> form) : name(got_id), TypeContainer(){
+    for (Id id : form){
+      formals.push_back(id);
+    }
+  };
   void addId(Id id) { formals.emplace_back(id); }
   vector<Id> getIds() { return formals; }
   void addIds(vector<Id> id_list) {

@@ -24,8 +24,11 @@ class Scope {
   stack<int> offsetStack;
   vector<vector<string>> enum_ids;
   vector<vector<string>> func_args_vec;
+<<<<<<< HEAD
   vector<string> global_enums;
   vector<string> identifiers;
+=======
+>>>>>>> c0b73e9f0c3255ed60c43f86556db4678bd43d1e
 
  public:
   bool exist(string id);
@@ -40,10 +43,13 @@ class Scope {
   void printTable();
   void insertFuncArgs(vector<ScopeData> func_args);
   string getParentEnumId(string enum_id);
+<<<<<<< HEAD
   void insertGlobalEnum(string glob_enum);
   bool findGlobalEnum(string glob_enum);
 //  void insertIdentifiers(string ids);
 //  bool IdOnly(string id);
+=======
+>>>>>>> c0b73e9f0c3255ed60c43f86556db4678bd43d1e
 //  bool isEnumContainer(string id);
   // void discoveringYYSTYPE(int yy);
 };

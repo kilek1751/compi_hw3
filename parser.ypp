@@ -435,7 +435,6 @@ TypeContainer* binOpType(TypeContainer* lhs, TypeContainer* rhs) {
 void typeCheck(TypeContainer* lhs,TypeContainer* rhs){
     string lhs_type = getActualType(lhs);
     string rhs_type = getActualType(rhs);
-
     if(lhs_type == "INT" && rhs_type =="BYTE") return;
     if (lhs_type.find("enum")!=std::string::npos){
       if (rhs_type=="ENUM"){
